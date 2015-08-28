@@ -22,7 +22,8 @@ All the following commands should be run from your scala directory.
 
 First you need ensime sbt plugin:    
     
-    $ echo addSbtPlugin("org.ensime" % "ensime-sbt" % "0.1.7") >> ~/.sbt/0.13/plugins/plugins.sbt
+    $ echo addSbtPlugin("org.ensime" % "ensime-sbt" % "0.1.7") \
+        >> ~/.sbt/0.13/plugins/plugins.sbt
 
 Then, generate .ensime file:
 
