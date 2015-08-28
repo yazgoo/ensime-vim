@@ -17,8 +17,12 @@ For example under ubuntu:
     
     $ sudo apt-get install vim-gnome
 
+You should also export your BROWSER variable, for example in your bashrc:
+
+    export BROWSER=firefox
+
 You need to clone this repository first.
-All the following commands should be run from your scala directory.
+All the following commands should be ran from your scala directory.
 
 First you need ensime sbt plugin:    
     
@@ -47,7 +51,8 @@ Finally, launch vim with the plugin and the file(s) you want to edit:
 command         |   description
 ----------------|----------------------------------------------------------
 EnType          | displays type under cursor
-EnDocUri        | displays document url under cursor
+EnDocUri        | displays documentation url under cursor
+EnDocBrowse     | launch $BROWSER (env variable) documentation url
 EnTypeCheck     | launch a check on current file (launched on save)
 EnCompleteFunc  | get an autocompletion menu (via ctrl+X ctrl+U) - blocking
 
