@@ -1,5 +1,7 @@
 # ensime-vim
 
+[![Join the chat at https://gitter.im/ensime/ensime-vim](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/ensime/ensime-vim?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 ENSIME for the Editor of the Beast (Vim)
 
 # demo
