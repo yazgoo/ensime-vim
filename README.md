@@ -44,6 +44,7 @@ Finally, launch vim with the plugin and the file(s) you want to edit:
 
 
 command         |   description
+----------------|----------------------------------------------------------
 EnType          | displays type under cursor
 EnDocUri        | displays document url under cursor
 EnTypeCheck     | launch a check on current file (launched on save)
