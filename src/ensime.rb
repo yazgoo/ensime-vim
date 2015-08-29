@@ -3,38 +3,36 @@ require 'websocket-eventmachine-client'
 require 'json'
 require 'thread'
 class EnsimeBridge
+    attr_accessor :socket
+    attr_reader :cache
     def initialize path
         @cache = "#{path}/.ensime_cache/"
+        @queue = Queue.new
         Thread.new do
-            @queue = Queue.new
             EventMachine.run do
-                url = "ws://127.0.0.1:#{File.read("#{@cache}http").chomp}/jerky"
-                @socket = WebSocket::EventMachine::Client.connect(:uri => url)
-                @socket.onopen do
-                    puts "Connected!"
-                end
-                @socket.onerror do |err|
-                    p err
-                end
-                @socket.onmessage do |msg, type|
-                    puts "Received message: #{msg}, type #{type}"
-                    @queue << msg
-                end
-                @socket.onclose do |code, reason|
-                    puts "Disconnected with status code: #{code} #{reason}"
-                end
+                connect_to_ensime
             end
         end
     end
-    def to_p text
-        text = text.to_json
-        size = text.size.to_s 16
-        prefix = (6 - size.size).times.collect { |x| "0"}.join
-        [prefix, size, text].join
-        text
+    def connect_to_ensime
+        url = "ws://127.0.0.1:#{File.read("#{@cache}http").chomp}/jerky"
+        @socket = WebSocket::EventMachine::Client.connect(:uri => url)
+        @socket.onopen do
+            puts "Connected!"
+        end
+        @socket.onerror do |err|
+            p err
+        end
+        @socket.onmessage do |msg, type|
+            puts "Received message: #{msg}, type #{type}"
+            @queue << msg
+        end
+        @socket.onclose do |code, reason|
+            puts "Disconnected with status code: #{code} #{reason}"
+        end
     end
     def json packet
-        s = to_p packet
+        s = packet.to_json
         Kernel.puts " to server => #{s}"
         @socket.send s
     end
@@ -53,9 +51,8 @@ class EnsimeBridge
     def run
         server = TCPServer.new "localhost", 0
         File.write("#{@cache}bridge", server.addr[1])
-        loop do
+        while @client = server.accept
             begin
-                @client = server.accept
                 command = @client.readline
                 while true
                     result = instance_eval command
@@ -77,7 +74,7 @@ class EnsimeBridge
                 puts e.backtrace
             end
         end
-   end
+    end
     def to_position path, row, col
         i = -1
         File.open(path) do |f|
@@ -91,8 +88,8 @@ class EnsimeBridge
     def at_point what, path, row, col, size, where = "range"
         i = to_position path, row, col
         req({"typehint" => what + "AtPointReq",
-                   "file" => path,
-                   where => {"from" => i,"to" => i + size}})
+            "file" => path,
+            where => {"from" => i,"to" => i + size}})
     end
     def type path, row, col, size
         at_point "Type", path, row, col, size
@@ -101,12 +98,12 @@ class EnsimeBridge
         at_point "DocUri", path, row, col, size, "point"
     end
     def complete path, row, col
-       i = to_position path, row, col
-       req({"point"=>i, "maxResults"=>100,"typehint"=>"CompletionsReq",
+        i = to_position path, row, col
+        req({"point"=>i, "maxResults"=>100,"typehint"=>"CompletionsReq",
             "caseSens"=>true,"fileInfo"=>{"file"=>path},"reload"=>false})
     end
     def typecheck path
         req({"typehint"=>"TypecheckFilesReq","files" => [path]})
     end
 end
-EnsimeBridge.new(ARGV.size == 0 ? "." : ARGV[0]).run
+EnsimeBridge.new(ARGV.size == 0 ? "." : ARGV[0]).run if __FILE__ == $0
