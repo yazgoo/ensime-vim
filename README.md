@@ -19,6 +19,10 @@ For example under ubuntu:
     
     $ sudo apt-get install vim-gnome
 
+You also need websocket-eventmachine-client gem:
+
+    $ sudo gem install websocket-eventmachine-client
+
 You should also export your BROWSER variable, for example in your bashrc:
 
     export BROWSER=firefox

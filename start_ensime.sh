@@ -98,4 +98,4 @@ CLASSPATH="$JDK_HOME/lib/tools.jar:`cat $CLASSPATH_FILE`"
 echo "  -> Starting ENSIME"
 cd "$ENSIME_CACHE"
 
-exec "$JAVA" -classpath "$CLASSPATH" $JAVA_FLAGS -Densime.protocol=jerk -Densime.config="$ENSIME_CONFIG" org.ensime.server.Server
+exec "$JAVA" -classpath "$CLASSPATH" $JAVA_FLAGS -Densime.config="$ENSIME_CONFIG" org.ensime.server.Server
