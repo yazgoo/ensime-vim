@@ -8,7 +8,7 @@ ENSIME for the Editor of the Beast (Vim)
 
 # demo
 
-![alt tag](https://raw.github.com/yazgoo/ensime-vim/master/demo.gif)
+![alt tag](https://raw.github.com/yazgoo/ensime-vim/master/doc/demo.gif)
 
 # howto
 
