@@ -43,15 +43,15 @@ Then, generate .ensime file:
 
 In a new terminal, start ensime server:
 
-    $ /path/to/ensime4vim/start_ensime.sh .ensime
+    $ /path/to/ensime-vim/src/start_ensime.sh .ensime
 
 In another terminal, start ensime bridge:
 
-    $ /path/to/ensime4vim/ensime.rb
+    $ /path/to/ensime-vim/src/ensime.rb
 
 Finally, launch vim with the plugin and the file(s) you want to edit:
 
-    $ vim -S /path/to/ensime4vim/ensime.vim src/scaloid/example/HelloScaloid.scala
+    $ vim -S /path/to/ensime-vim/src/ensime.vim src/scaloid/example/HelloScaloid.scala
 
 # available commands
 
