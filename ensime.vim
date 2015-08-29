@@ -1,6 +1,7 @@
 highlight EnError ctermbg=red
 ruby <<EOF
     $en_matches = []
+    $browse = true
 EOF
 fun EnSend(what)
     ruby <<EOF
@@ -26,7 +27,12 @@ ruby <<EOF
                 $en_matches << VIM.evaluate("matchadd('EnError', '\\%#{l}l\\%>#{c}c\\%<#{e}c')")
             end
         elsif typehint == "StringResponse"
-            VIM.message(payload["text"])
+            url = "http://127.0.0.1:#{File.read(".ensime_cache/http").chomp}/#{payload["text"]}"
+            VIM.message(url)
+            if $browse
+                VIM.command("!#{ENV['BROWSER']} #{url.gsub('#', '\#')}")
+                $browse = false
+            end
         elsif typehint == "ArrowTypeInfo"
             VIM.message(payload["name"])
         elsif typehint == "BasicTypeInfo"
@@ -75,6 +81,10 @@ endfun
 fun EnDocUri()
     call EnPathStartSize("doc_uri")
 endfun
+fun EnDocBrowse()
+    ruby $browse = true
+    call EnDocUri()
+endfun
 fun EnType()
     call EnPathStartSize("type")
 endfun
@@ -114,4 +124,5 @@ command! -nargs=0 EnComplete call EnComplete()
 command! -nargs=0 EnType call EnType()
 command! -nargs=0 EnTypeCheck call EnTypeCheck()
 command! -nargs=0 EnDocUri call EnDocUri()
+command! -nargs=0 EnDocBrowse call EnDocBrowse()
 command! -nargs=0 EnUnqueue call EnUnqueue()
