@@ -53,16 +53,24 @@ Finally, launch vim with the plugin and the file(s) you want to edit:
 
     $ vim -S /path/to/ensime-vim/src/ensime.vim src/scaloid/example/HelloScaloid.scala
 
+Or if you're using neovim:
+
+    $ mkdir -p ~/.nvim/rplugin/python/
+    $ ln -s /path/to/ensime-vim/src/ensime.py ~/.nvim/rplugin/python/
+    $ nvim src/scaloid/example/HelloScaloid.scala
+
+Then update neovim plugins with :UpdateRemotePlugins
+
 # available commands
 
 
-command         |   description
-----------------|----------------------------------------------------------
-EnType          | displays type under cursor
-EnDocUri        | displays documentation url under cursor
-EnDocBrowse     | launch $BROWSER (env variable) documentation url
-EnTypeCheck     | launch a check on current file (launched on save)
-EnCompleteFunc  | get an autocompletion menu (via ctrl+X ctrl+U) - blocking
+command         |   description                                                | vim | neovim
+----------------|--------------------------------------------------------------|-----|-------
+EnType          | displays type under cursor                                   |  x  |   x
+EnDocUri        | displays documentation url under cursor                      |  x  |   x
+EnDocBrowse     | launch $BROWSER (env variable) documentation url             |  x  |   x
+EnTypeCheck     | launch a check on current file (launched on save)            |  x  |   
+EnCompleteFunc  | get an autocompletion menu (via ctrl+X ctrl+U) - blocking    |  x  |   
 
 
 # design
