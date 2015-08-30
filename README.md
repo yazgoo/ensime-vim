@@ -1,12 +1,14 @@
+
 # ensime-vim
 
 [![Join the chat at https://gitter.im/ensime/ensime-vim](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/ensime/ensime-vim?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Build Status](https://drone.io/github.com/yazgoo/ensime-vim/status.png)](https://drone.io/github.com/yazgoo/ensime-vim/latest)
 
 ENSIME for the Editor of the Beast (Vim)
 
 # demo
 
-![alt tag](https://raw.github.com/yazgoo/ensime-vim/master/demo.gif)
+![alt tag](https://raw.github.com/yazgoo/ensime-vim/master/doc/demo.gif)
 
 # howto
 
@@ -41,26 +43,34 @@ Then, generate .ensime file:
 
 In a new terminal, start ensime server:
 
-    $ /path/to/ensime4vim/start_ensime.sh .ensime
+    $ /path/to/ensime-vim/src/ensime.rb .ensime
 
 In another terminal, start ensime bridge:
 
-    $ /path/to/ensime4vim/ensime.rb
+    $ /path/to/ensime-vim/src/ensime_bridge.rb
 
 Finally, launch vim with the plugin and the file(s) you want to edit:
 
-    $ vim -S /path/to/ensime4vim/ensime.vim src/scaloid/example/HelloScaloid.scala
+    $ vim -S /path/to/ensime-vim/src/ensime.vim src/scaloid/example/HelloScaloid.scala
+
+Or if you're using neovim:
+
+    $ mkdir -p ~/.nvim/rplugin/python/
+    $ ln -s /path/to/ensime-vim/src/ensime.py ~/.nvim/rplugin/python/
+    $ nvim src/scaloid/example/HelloScaloid.scala
+
+Then update neovim plugins with :UpdateRemotePlugins
 
 # available commands
 
 
-command         |   description
-----------------|----------------------------------------------------------
-EnType          | displays type under cursor
-EnDocUri        | displays documentation url under cursor
-EnDocBrowse     | launch $BROWSER (env variable) documentation url
-EnTypeCheck     | launch a check on current file (launched on save)
-EnCompleteFunc  | get an autocompletion menu (via ctrl+X ctrl+U) - blocking
+command         |   description                                                | vim | neovim
+----------------|--------------------------------------------------------------|-----|-------
+EnType          | displays type under cursor                                   |  x  |   x
+EnDocUri        | displays documentation url under cursor                      |  x  |   x
+EnDocBrowse     | launch $BROWSER (env variable) documentation url             |  x  |   x
+EnTypeCheck     | launch a check on current file (launched on save)            |  x  |   x
+EnCompleteFunc  | get an autocompletion menu (via ctrl+X ctrl+U) - blocking    |  x  |   x
 
 
 # design
