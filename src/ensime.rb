@@ -55,8 +55,11 @@ EOF
     end
     def run
         FileUtils.mkdir_p @conf['cache-dir']
-        system "#{@conf['java-home']}/bin/java #{@conf['java-flags']} \
+        @pid = Process.spawn "#{@conf['java-home']}/bin/java #{@conf['java-flags']} \
         -cp #{get_classpath} -Densime.config=#{@conf_path} org.ensime.server.Server"
+    end
+    def stop
+        Process.kill 'TERM', @pid if @pid
     end
 end
 Ensime.new(ARGV.size == 0 ? ".ensime" : ARGV[0]).run if __FILE__ == $0

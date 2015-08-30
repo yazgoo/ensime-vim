@@ -1,4 +1,6 @@
 image: ensime/ensime:latest
 script:
-  - bundle install &&
+  - apt-get install -yy ruby &&
+    gem install bundle &&
+    bundle install &&
     bundle exec rake
