@@ -1,0 +1,4 @@
+image: ensime/ensime:latest
+script:
+  - bundle install &&
+    bundle exec rake

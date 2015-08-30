@@ -75,7 +75,7 @@ EnCompleteFunc  | get an autocompletion menu (via ctrl+X ctrl+U) - blocking    |
 
 # design
 
-![alt tag](https://raw.github.com/yazgoo/ensime-vim/master/ensime-vim.png)
+![alt tag](https://raw.github.com/yazgoo/ensime-vim/master/doc/ensime-vim.png)
 
 Since vim does not support asynchronous flows,
 a bridge is used to send and receive messages from ensime,
