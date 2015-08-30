@@ -1,109 +1,62 @@
 #!/usr/bin/env ruby
-require 'websocket-eventmachine-client'
-require 'json'
-require 'thread'
-class EnsimeBridge
-    attr_accessor :socket
-    attr_reader :cache
-    def initialize path
-        @cache = "#{path}/.ensime_cache/"
-        @queue = Queue.new
-        Thread.new do
-            EventMachine.run do
-                connect_to_ensime
+require 'fileutils'
+class Ensime
+    def initialize conf_path
+        @conf_path = conf_path
+        @conf = Hash[File.read(conf_path).gsub("\n", "").gsub(
+            "(", " ").gsub(")", " ").gsub('"', "").split(" :").collect do |x|
+            m = x.match("\([^ ]*\) *\(.*\)$")
+            [m[1], m[2]]
+            end]
+        @version = "0.9.10-SNAPSHOT"
+    end
+    def get_classpath
+        log = nil 
+        classpath = nil
+        dir = "/tmp/classpath_project_ensime"
+        classpath_file = "#{dir}/classpath"
+        if not File.exists? classpath_file
+        FileUtils.mkdir_p dir
+        build_sbt = <<EOF
+import sbt._
+import IO._
+import java.io._
+scalaVersion := "#{@conf['scala-version']}"
+ivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) }
+// allows local builds of scala
+resolvers += Resolver.mavenLocal
+resolvers += Resolver.sonatypeRepo("snapshots")
+resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/"
+resolvers += "Akka Repo" at "http://repo.akka.io/repository"
+libraryDependencies ++= Seq(
+  "org.ensime" %% "ensime" % "#{@version}",
+  "org.scala-lang" % "scala-compiler" % scalaVersion.value force(),
+  "org.scala-lang" % "scala-reflect" % scalaVersion.value force(),
+  "org.scala-lang" % "scalap" % scalaVersion.value force()
+)
+val saveClasspathTask = TaskKey[Unit]("saveClasspath", "Save the classpath to a file")
+saveClasspathTask := {
+  val managed = (managedClasspath in Runtime).value.map(_.data.getAbsolutePath)
+  val unmanaged = (unmanagedClasspath in Runtime).value.map(_.data.getAbsolutePath)
+  val out = file("#{classpath_file}")
+  write(out, (unmanaged ++ managed).mkString(File.pathSeparator))
+}
+EOF
+            FileUtils.mkdir_p "#{dir}/project"
+            File.write("#{dir}/build.sbt", build_sbt)
+            File.write("#{dir}/project/build.properties", "sbt.version=0.13.8")
+            Dir.chdir dir do 
+                log = `sbt saveClasspath`
             end
+            puts log
         end
-    end
-    def connect_to_ensime
-        url = "ws://127.0.0.1:#{File.read("#{@cache}http").chomp}/jerky"
-        @socket = WebSocket::EventMachine::Client.connect(:uri => url)
-        @socket.onopen do
-            puts "Connected!"
-        end
-        @socket.onerror do |err|
-            p err
-        end
-        @socket.onmessage do |msg, type|
-            puts "Received message: #{msg}, type #{type}"
-            @queue << msg
-        end
-        @socket.onclose do |code, reason|
-            puts "Disconnected with status code: #{code} #{reason}"
-        end
-    end
-    def json packet
-        s = packet.to_json
-        Kernel.puts " to server => #{s}"
-        @socket.send s
-    end
-    def req message
-        @i ||= 0
-        @i += 1
-        json({"callId" => @i,"req" => message})
-    end
-    def unqueue
-        if @queue.size == 0
-            nil
-        else
-            @queue.pop(true)
-        end
+        classpath = File.read classpath_file
+        classpath + ":#{@conf['java-home']}/lib/tools.jar"
     end
     def run
-        server = TCPServer.new "localhost", 0
-        File.write("#{@cache}bridge", server.addr[1])
-        while @client = server.accept
-            begin
-                command = @client.readline
-                while true
-                    result = instance_eval command
-                    if command.chomp == "unqueue"
-                        if not result.nil? and not result.empty?
-                            @client.puts result.gsub("\n", "")
-                        else
-                            @client.puts "nil"
-                            break
-                        end
-                        puts result.gsub("\n", "")
-                    else
-                        break
-                    end
-                end
-                @client.close
-            rescue => e
-                p e
-                puts e.backtrace
-            end
-        end
-    end
-    def to_position path, row, col
-        i = -1
-        File.open(path) do |f|
-            (row - 1).times do
-                i += f.readline.size
-            end
-            i += col
-        end
-        i
-    end
-    def at_point what, path, row, col, size, where = "range"
-        i = to_position path, row, col
-        req({"typehint" => what + "AtPointReq",
-            "file" => path,
-            where => {"from" => i,"to" => i + size}})
-    end
-    def type path, row, col, size
-        at_point "Type", path, row, col, size
-    end
-    def doc_uri path, row, col, size
-        at_point "DocUri", path, row, col, size, "point"
-    end
-    def complete path, row, col
-        i = to_position path, row, col
-        req({"point"=>i, "maxResults"=>100,"typehint"=>"CompletionsReq",
-            "caseSens"=>true,"fileInfo"=>{"file"=>path},"reload"=>false})
-    end
-    def typecheck path
-        req({"typehint"=>"TypecheckFilesReq","files" => [path]})
+        FileUtils.mkdir_p @conf['cache-dir']
+        system "#{@conf['java-home']}/bin/java #{@conf['java-flags']} \
+        -cp #{get_classpath} -Densime.config=#{@conf_path} org.ensime.server.Server"
     end
 end
-EnsimeBridge.new(ARGV.size == 0 ? "." : ARGV[0]).run if __FILE__ == $0
+Ensime.new(ARGV.size == 0 ? ".ensime" : ARGV[0]).run if __FILE__ == $0

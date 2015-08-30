@@ -43,11 +43,11 @@ Then, generate .ensime file:
 
 In a new terminal, start ensime server:
 
-    $ /path/to/ensime-vim/src/start_ensime.sh .ensime
+    $ /path/to/ensime-vim/src/ensime.rb .ensime
 
 In another terminal, start ensime bridge:
 
-    $ /path/to/ensime-vim/src/ensime.rb
+    $ /path/to/ensime-vim/src/ensime_bridge.rb
 
 Finally, launch vim with the plugin and the file(s) you want to edit:
 
