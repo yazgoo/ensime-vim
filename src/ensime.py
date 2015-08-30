@@ -3,13 +3,20 @@ import json
 import socket
 import os
 import subprocess
+import re
 @neovim.plugin
 class Ensime(object):
     def __init__(self, vim):
         self.browse = False
         self.vim = vim
         self.matches = []
-        vim.command("highlight EnError ctermbg=red")
+        self.vim.command("highlight EnError ctermbg=red")
+        self.is_setup = False
+        self.suggests = None
+    def setup(self):
+        if not self.is_setup:
+            self.vim.command("set completefunc=EnCompleteFunc")
+            self.is_setup = True
     def get_cache_port(self, where):
         f = open(".ensime_cache/" + where)
         port = f.read()
@@ -36,6 +43,9 @@ class Ensime(object):
         s = e - b
         self.send('{} "{}", {}, {}, {}'.format(what,
             self.path(), self.cursor()[0], b + 1, s))
+    def complete(self):
+        self.send('complete "{}", {}, {}'.format(
+            self.path(), self.cursor()[0], self.cursor()[1] + 1))
     @neovim.command('EnTypeCheck', range='', nargs='*', sync=True)
     def type_check_cmd(self, args, range):
         self.type_check("")
@@ -46,7 +56,7 @@ class Ensime(object):
     def doc_uri(self, args, range):
         self.path_start_size("doc_uri")
     @neovim.command('EnDocBrowse', range='', nargs='*', sync=True)
-    def doc_browse(self, args, range):
+    def doc_browse(self, args, range) :
         self.browse = True
         self.doc_uri(args, range)
     def log(self, what):
@@ -83,6 +93,8 @@ class Ensime(object):
                 subprocess.Popen([os.environ.get("BROWSER"), url])
                 self.browse = False
             self.message(url)
+        elif typehint == "CompletionInfoList":
+            self.suggests = [completion["name"] for completion in payload["completions"]]
     @neovim.autocmd('BufWritePost', pattern='*.scala', eval='expand("<afile>")',
                     sync=True)
     def type_check(self, filename):
@@ -93,13 +105,13 @@ class Ensime(object):
     @neovim.autocmd('CursorMoved', pattern='*.scala', eval='expand("<afile>")',
                     sync=True)
     def unqueue(self, filename):
+        self.setup()
         s = self.get_socket()
         s.send("unqueue\n")
         while True:
             result = self.read_line(s)
             if result == None or result == "nil":
                 break
-            self.log("> " + str(result))
             _json = json.loads(result)
             if _json["payload"] != None:
                 self.handle_payload(_json["payload"])
@@ -108,3 +120,25 @@ class Ensime(object):
         self._increment_calls()
         self.vim.current.line = (
             'Autocmd: Called %s times, file: %s' % (self.calls, filename))
+    @neovim.function('EnCompleteFunc', sync=True)
+    def complete_func(self, args):
+        if args[0] == '1':
+            self.complete()
+            line = self.vim.eval("getline('.')")
+            start = self.cursor()[1] - 1
+            pattern = re.compile('\a')
+            while start > 0 and pattern.match(line[start - 1]):
+                start -= 1
+            return start
+        else:
+            while True:
+                if self.suggests != None:
+                    break
+                self.unqueue("")
+            result = []
+            pattern = re.compile('^' + args[1])
+            for m in self.suggests:
+                if pattern.match(m):
+                    result.append(m)
+            self.suggests = None
+            return result
