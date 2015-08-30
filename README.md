@@ -69,7 +69,7 @@ command         |   description                                                |
 EnType          | displays type under cursor                                   |  x  |   x
 EnDocUri        | displays documentation url under cursor                      |  x  |   x
 EnDocBrowse     | launch $BROWSER (env variable) documentation url             |  x  |   x
-EnTypeCheck     | launch a check on current file (launched on save)            |  x  |   
+EnTypeCheck     | launch a check on current file (launched on save)            |  x  |   x
 EnCompleteFunc  | get an autocompletion menu (via ctrl+X ctrl+U) - blocking    |  x  |   
 
 
