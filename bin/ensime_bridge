@@ -1,0 +1,3 @@
+#!/usr/bin/env ruby
+require 'ensime_bridge'
+EnsimeBridge.new(ARGV.size == 0 ? ".ensime" : ARGV[0]).run
