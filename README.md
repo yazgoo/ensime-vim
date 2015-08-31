@@ -12,15 +12,6 @@ ENSIME for the Editor of the Beast (Vim)
 
 # howto
 
-You need vim with ruby enabled, which you can check via:
-
-    $ vim --version|grep +ruby -o
-    +ruby
-
-For example under ubuntu:
-    
-    $ sudo apt-get install vim-gnome
-
 You need ensime\_bridge gem:
 
     $ sudo gem install ensime_bridge
