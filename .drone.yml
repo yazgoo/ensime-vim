@@ -1,6 +1,6 @@
 image: ensime/ensime:latest
 script:
-  - apt-get install -yy libssl1.0.0 libssl-dev ruby ruby-dev &&
+  - apt-get install -yy openssl libssl-dev ruby ruby-dev &&
     gem install bundle &&
     bundle install &&
     bundle exec rake
