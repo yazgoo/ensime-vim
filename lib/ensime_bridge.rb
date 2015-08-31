@@ -2,6 +2,7 @@
 require 'websocket-eventmachine-client'
 require 'json'
 require 'thread'
+require 'base64'
 require_relative 'ensime'
 class EnsimeBridge
     attr_accessor :socket
@@ -134,10 +135,14 @@ class EnsimeBridge
     def doc_uri path, row, col, size
         at_point "DocUri", path, row, col, size, "point"
     end
-    def complete path, row, col
+    def complete path, row, col, contents = nil
         i = to_position path, row, col
+        fileinfo = {"file"=>path}
+        if contents
+            fileinfo["contents"] = Base64.decode64(contents.gsub("!EOL!", "\n"))
+        end
         req({"point"=>i, "maxResults"=>100,"typehint"=>"CompletionsReq",
-            "caseSens"=>true,"fileInfo"=>{"file"=>path},"reload"=>false})
+            "caseSens"=>true,"fileInfo"=> fileinfo,"reload"=>false})
     end
     def typecheck path
         req({"typehint"=>"TypecheckFilesReq","files" => [path]})
