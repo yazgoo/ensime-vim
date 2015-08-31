@@ -1,6 +1,6 @@
 fun EnSetup()
     highlight EnError ctermbg=red
-ruby <<EOF
+    ruby <<EOF
     $en_matches = []
     $browse = true
 EOF
@@ -92,7 +92,13 @@ fun EnPathStartSize(what)
     call EnSend(a:what." \"".expand('%:p')."\", ".line('.').", ".b.", ".s)
 endfun
 fun EnComplete()
-    call EnSend("complete \"".expand('%:p')."\", ".line('.').", ".col('.'))
+    ruby <<EOF
+    require 'base64'
+    content = VIM.evaluate('join(getline(1, "$"), "\n")')
+    content = Base64.encode64(content).gsub("\n", "!EOL!")
+    VIM.command("let g:encontent = '#{content}'")
+EOF
+    call EnSend("complete \"".expand('%:p')."\", ".line('.').", ".col('.').", \"".g:encontent."\"")
 endfun
 fun EnDocUri()
     call EnPathStartSize("doc_uri")
@@ -134,6 +140,7 @@ fun! EnCompleteFunc(findstart, base)
         return res 
     endif 
 endfun 
+call EnSetup()
 " via ctrl+X ctrl+U
 set completefunc=EnCompleteFunc
 command! -nargs=0 EnComplete call EnComplete()
