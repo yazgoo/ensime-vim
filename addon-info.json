@@ -4,7 +4,7 @@
   "author" : "Olivier 'yazgoo' Abdesselam",
   "maintainer" : "Olivier 'yazgoo' Abdesselam",
   "repository" : {"type": "git", "url":
-"git://github.com/yazgoo/ensime-vim.git", "branch" : "master"},
+      "git://github.com/yazgoo/ensime-vim", "branch" : "master"},
   "dependencies" : {
     "self": {},
     "forms": {},
