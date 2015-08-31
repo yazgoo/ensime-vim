@@ -134,7 +134,6 @@ class Ensime(object):
             'Autocmd: Called %s times, file: %s' % (self.calls, filename))
     @neovim.function('EnCompleteFunc', sync=True)
     def complete_func(self, args):
-        self.log(str(args))
         if args[0] == '1':
             self.complete()
             line = self.vim.eval("getline('.')")
