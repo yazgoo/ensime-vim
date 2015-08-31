@@ -43,7 +43,7 @@ Then, generate .ensime file:
 
 In a new terminal, start ensime server:
 
-    $ /path/to/ensime-vim/src/ensime.rb .ensime
+    $ /path/to/ensime-vim/src/ensime.rb
 
 In another terminal, start ensime bridge:
 
