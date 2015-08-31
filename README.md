@@ -49,17 +49,16 @@ by adding to your .vimrc:
 
     Plugin 'ensime/ensime-vim'
 
+Or if you're using neovim, with [vim-plug](https://github.com/junegunn/vim-plug)
+by adding to your .nvimrc:
+
+    Plug 'ensime/ensime-vim'
+
+Then by doing a :PlugInstall and a :UpdateRemotePlugins under neovim
+
 Finally, launch vim with the file(s) you want to edit:
 
     $ vim src/scaloid/example/HelloScaloid.scala
-
-Or if you're using neovim:
-
-    $ mkdir -p ~/.nvim/rplugin/python/
-    $ ln -s /path/to/ensime-vim/src/ensime.py ~/.nvim/rplugin/python/
-    $ nvim src/scaloid/example/HelloScaloid.scala
-
-Then update neovim plugins with :UpdateRemotePlugins
 
 # available commands
 
