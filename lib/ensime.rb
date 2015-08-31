@@ -1,6 +1,17 @@
 #!/usr/bin/env ruby
 require 'fileutils'
+require 'socket'
 class Ensime
+    def is_running?
+        port_path = @conf_path + "_cache/http"
+        return false if not File.exists? port_path
+        begin
+            TCPSocket.open("127.0.0.1", File.read(port_path).chomp).close
+        rescue => e
+            return false
+        end
+        true
+    end
     def initialize conf_path
         @conf_path = conf_path
         @conf = Hash[File.read(conf_path).gsub("\n", "").gsub(
@@ -54,9 +65,22 @@ EOF
         classpath + ":#{@conf['java-home']}/lib/tools.jar"
     end
     def run
-        FileUtils.mkdir_p @conf['cache-dir']
-        system "#{@conf['java-home']}/bin/java #{@conf['java-flags']} \
+        if is_running?
+            puts "ensime is already running"
+        else
+            FileUtils.mkdir_p @conf['cache-dir']
+            @pid = Process.spawn "#{@conf['java-home']}/bin/java #{@conf['java-flags']} \
         -cp #{get_classpath} -Densime.config=#{@conf_path} org.ensime.server.Server"
+        end
+        self
+    end
+    def wait
+        Process.wait @pid if @pid
+    end
+    def stop
+        Process.kill 'TERM', @pid if @pid
     end
 end
-Ensime.new(ARGV.size == 0 ? ".ensime" : ARGV[0]).run if __FILE__ == $0
+if __FILE__ == $0
+    Ensime.new(ARGV.size == 0 ? ".ensime" : ARGV[0]).run.wait
+end

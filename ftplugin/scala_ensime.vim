@@ -1,8 +1,10 @@
-highlight EnError ctermbg=red
+fun EnSetup()
+    highlight EnError ctermbg=red
 ruby <<EOF
     $en_matches = []
     $browse = true
 EOF
+endfunc
 fun EnSend(what)
     ruby <<EOF
     require 'socket'

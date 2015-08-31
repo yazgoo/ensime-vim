@@ -2,17 +2,38 @@
 require 'websocket-eventmachine-client'
 require 'json'
 require 'thread'
+require_relative 'ensime'
 class EnsimeBridge
     attr_accessor :socket
     attr_reader :cache
-    def initialize path
-        @cache = "#{path}/.ensime_cache/"
-        @queue = Queue.new
-        Thread.new do
-            EventMachine.run do
-                connect_to_ensime
-            end
+    def get_socket file
+        TCPSocket.open("localhost", File.read(file).chomp)
+    end
+    def is_running? file = nil
+        file = file.nil? ? @bridge_file : file
+        return false if not File.exists? file
+        begin
+            get_socket(file).close
+        rescue => e
+            return false
         end
+        true
+    end
+    def initialize path
+        @ensime = Ensime.new(path).run
+        @cache = "#{path}_cache/"
+        @queue = Queue.new
+        @bridge_file = "#{@cache}bridge"
+        @http_file = "#{@cache}http"
+    end
+    def remote_stop
+        s = get_socket(@bridge_file)
+        s.puts "self.stop"
+        s.close
+    end
+    def stop
+        @ensime.stop
+        exit
     end
     def connect_to_ensime
         url = "ws://127.0.0.1:#{File.read("#{@cache}http").chomp}/jerky"
@@ -48,15 +69,31 @@ class EnsimeBridge
             @queue.pop(true)
         end
     end
+    def wait_for_ensime
+        while not is_running? @http_file
+            sleep 0.2
+        end
+    end
     def run
+        if is_running?
+            puts "bridge is already running"
+            return
+        end
+        wait_for_ensime
+        puts "ensime is ready"
+        Thread.new do
+            EventMachine.run do
+                connect_to_ensime
+            end
+        end
         server = TCPServer.new "localhost", 0
-        File.write("#{@cache}bridge", server.addr[1])
+        File.write(@bridge_file, server.addr[1])
         while @client = server.accept
             begin
-                command = @client.readline
+                command = @client.readline.chomp
                 while true
                     result = instance_eval command
-                    if command.chomp == "unqueue"
+                    if command == "unqueue"
                         if not result.nil? and not result.empty?
                             @client.puts result.gsub("\n", "")
                         else
@@ -106,4 +143,4 @@ class EnsimeBridge
         req({"typehint"=>"TypecheckFilesReq","files" => [path]})
     end
 end
-EnsimeBridge.new(ARGV.size == 0 ? "." : ARGV[0]).run if __FILE__ == $0
+EnsimeBridge.new(ARGV.size == 0 ? ".ensime" : ARGV[0]).run if __FILE__ == $0
