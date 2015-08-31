@@ -4,6 +4,7 @@ import socket
 import os
 import subprocess
 import re
+import base64
 @neovim.plugin
 class Ensime(object):
     def __init__(self, vim):
@@ -44,8 +45,10 @@ class Ensime(object):
         self.send('{} "{}", {}, {}, {}'.format(what,
             self.path(), self.cursor()[0], b + 1, s))
     def complete(self):
-        self.send('complete "{}", {}, {}'.format(
-            self.path(), self.cursor()[0], self.cursor()[1] + 1))
+        content = self.vim.eval('join(getline(1, "$"), "\n")')
+        content = base64.b64encode(content).replace("\n", "!EOL!")
+        self.send('complete "{}", {}, {}, "{}"'.format(self.path(),
+            self.cursor()[0], self.cursor()[1] + 1, content))
     @neovim.command('EnTypeCheck', range='', nargs='*', sync=True)
     def type_check_cmd(self, args, range):
         self.type_check("")
