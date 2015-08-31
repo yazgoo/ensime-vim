@@ -2,6 +2,7 @@
 require 'fileutils'
 require 'socket'
 class Ensime
+    attr_accessor :quiet
     def is_running?
         port_path = @conf_path + "_cache/http"
         return false if not File.exists? port_path
@@ -13,6 +14,7 @@ class Ensime
         true
     end
     def initialize conf_path
+        @quiet = false
         @conf_path = conf_path
         @conf = Hash[File.read(conf_path).gsub("\n", "").gsub(
             "(", " ").gsub(")", " ").gsub('"', "").split(" :").collect do |x|
@@ -59,7 +61,6 @@ EOF
             Dir.chdir dir do 
                 log = `sbt saveClasspath`
             end
-            puts log
         end
         classpath = File.read classpath_file
         classpath + ":#{@conf['java-home']}/lib/tools.jar"
@@ -69,8 +70,11 @@ EOF
             puts "ensime is already running"
         else
             FileUtils.mkdir_p @conf['cache-dir']
-            @pid = Process.spawn "#{@conf['java-home']}/bin/java #{@conf['java-flags']} \
-        -cp #{get_classpath} -Densime.config=#{@conf_path} org.ensime.server.Server"
+            out = quiet ? "/dev/null" : STDOUT
+            @pid = Process.spawn(
+                "#{@conf['java-home']}/bin/java #{@conf['java-flags']} \
+        -cp #{get_classpath} -Densime.config=#{@conf_path} org.ensime.server.Server",
+            :out => out)
         end
         self
     end

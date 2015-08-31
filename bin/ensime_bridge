@@ -1,7 +1,13 @@
 #!/usr/bin/env ruby
 require 'ensime_bridge'
+quiet = false
+if ARGV[0] == "--quiet"
+    ARGV.shift
+    quiet = true
+end
 bridge = EnsimeBridge.new(ARGV.size < 2 ? ".ensime" : ARGV[1])
-if ARGV.size > 1 and ARGV[0] == "stop"
+bridge.quiet = quiet
+if ARGV.size > 0 and ARGV[0] == "stop"
     bridge.remote_stop
 else
     bridge.run

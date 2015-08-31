@@ -3,8 +3,12 @@ fun EnSetup()
     ruby <<EOF
     $en_matches = []
     $browse = true
+    fork { exec "ensime_bridge --quiet &" }
 EOF
 endfunc
+fun EnTeardown()
+    !ensime_bridge stop
+endfun
 fun EnSend(what)
     ruby <<EOF
     require 'socket'
@@ -114,6 +118,7 @@ augroup Poi
     autocmd!
     autocmd BufWritePost * call EnTypeCheck()
     autocmd CursorMoved * call EnUnqueue()
+    autocmd VimLeave * call EnTeardown()
 augroup END
 fun! EnCompleteFunc(findstart, base) 
     if a:findstart 
