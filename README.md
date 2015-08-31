@@ -21,15 +21,14 @@ For example under ubuntu:
     
     $ sudo apt-get install vim-gnome
 
-You also need websocket-eventmachine-client gem:
+You need ensime\_bridge gem:
 
-    $ sudo gem install websocket-eventmachine-client
+    $ sudo gem install ensime_bridge
 
 You should also export your BROWSER variable, for example in your bashrc:
 
     export BROWSER=firefox
 
-You need to clone this repository first.
 All the following commands should be ran from your scala directory.
 
 First you need ensime sbt plugin:    
@@ -41,17 +40,18 @@ Then, generate .ensime file:
 
     $ sbt gen-ensime
 
-In a new terminal, start ensime server:
+In a new terminal, start ensime bridge:
 
-    $ /path/to/ensime-vim/src/ensime.rb
+    $ ensime_bridge
 
-In another terminal, start ensime bridge:
+Then install vim plugin, with [Vundle](https://github.com/VundleVim/Vundle.vim),
+by adding to your .vimrc:
 
-    $ /path/to/ensime-vim/src/ensime_bridge.rb
+    Plugin 'ensime/ensime-vim'
 
-Finally, launch vim with the plugin and the file(s) you want to edit:
+Finally, launch vim with the file(s) you want to edit:
 
-    $ vim -S /path/to/ensime-vim/src/ensime.vim src/scaloid/example/HelloScaloid.scala
+    $ vim src/scaloid/example/HelloScaloid.scala
 
 Or if you're using neovim:
 
