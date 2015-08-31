@@ -5,7 +5,7 @@ require 'thread'
 require 'base64'
 require_relative 'ensime'
 class EnsimeBridge
-    attr_accessor :socket
+    attr_accessor :socket, :quiet
     attr_reader :cache
     def get_socket file
         TCPSocket.open("localhost", File.read(file).chomp)
@@ -21,7 +21,8 @@ class EnsimeBridge
         true
     end
     def initialize path
-        @ensime = Ensime.new(path).run
+        @ensime = Ensime.new(path)
+        @quiet = false
         @cache = "#{path}_cache/"
         @queue = Queue.new
         @bridge_file = "#{@cache}bridge"
@@ -36,26 +37,29 @@ class EnsimeBridge
         @ensime.stop
         exit
     end
+    def log what
+        Kernel.puts what.to_s if not quiet
+    end
     def connect_to_ensime
         url = "ws://127.0.0.1:#{File.read("#{@cache}http").chomp}/jerky"
         @socket = WebSocket::EventMachine::Client.connect(:uri => url)
         @socket.onopen do
-            puts "Connected!"
+            log "Connected!"
         end
         @socket.onerror do |err|
-            p err
+            log err
         end
         @socket.onmessage do |msg, type|
-            puts "Received message: #{msg}, type #{type}"
+            log "Received message: #{msg}, type #{type}"
             @queue << msg
         end
         @socket.onclose do |code, reason|
-            puts "Disconnected with status code: #{code} #{reason}"
+            log "Disconnected with status code: #{code} #{reason}"
         end
     end
     def json packet
         s = packet.to_json
-        Kernel.puts " to server => #{s}"
+        log " to server => #{s}"
         @socket.send s
     end
     def req message
@@ -76,12 +80,14 @@ class EnsimeBridge
         end
     end
     def run
+        @ensime.quiet = quiet
+        @ensime.run
         if is_running?
-            puts "bridge is already running"
+            log "bridge is already running"
             return
         end
         wait_for_ensime
-        puts "ensime is ready"
+        log "ensime is ready"
         Thread.new do
             EventMachine.run do
                 connect_to_ensime
@@ -101,15 +107,15 @@ class EnsimeBridge
                             @client.puts "nil"
                             break
                         end
-                        puts result.gsub("\n", "")
+                        log result.gsub("\n", "")
                     else
                         break
                     end
                 end
                 @client.close
             rescue => e
-                p e
-                puts e.backtrace
+                log e
+                log e.backtrace
             end
         end
     end

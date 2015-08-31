@@ -40,10 +40,6 @@ Then, generate .ensime file:
 
     $ sbt gen-ensime
 
-In a new terminal, start ensime bridge:
-
-    $ ensime_bridge
-
 Then install vim plugin, with [Vundle](https://github.com/VundleVim/Vundle.vim),
 by adding to your .vimrc:
 

@@ -5,6 +5,7 @@ import os
 import subprocess
 import re
 import base64
+from socket import error as socket_error
 @neovim.plugin
 class Ensime(object):
     def __init__(self, vim):
@@ -14,8 +15,13 @@ class Ensime(object):
         self.vim.command("highlight EnError ctermbg=red")
         self.is_setup = False
         self.suggests = None
+    @neovim.autocmd('VimLeave', pattern='*.scala', eval='expand("<afile>")',
+                    sync=True)
+    def teardown(self, filename):
+        subprocess.Popen(["ensime_bridge", "stop"])
     def setup(self):
         if not self.is_setup:
+            subprocess.Popen(["ensime_bridge", "--quiet"])
             self.vim.command("set completefunc=EnCompleteFunc")
             self.is_setup = True
     def get_cache_port(self, where):
@@ -24,12 +30,16 @@ class Ensime(object):
         f.close()
         return port.replace("\n", "")
     def get_socket(self):
-        s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
-        port = self.get_cache_port("bridge")
-        s.connect(("::1", int(port)))
-        return s
+        try:
+            s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+            port = self.get_cache_port("bridge")
+            s.connect(("::1", int(port)))
+            return s
+        except socket_error:
+            return None
     def send(self, what):
         s = self.get_socket()
+        if s == None: return
         s.send(what + "\n")
         s.close()
     def cursor(self):
@@ -110,6 +120,7 @@ class Ensime(object):
     def unqueue(self, filename):
         self.setup()
         s = self.get_socket()
+        if s == None: return
         s.send("unqueue\n")
         while True:
             result = self.read_line(s)
