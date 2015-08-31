@@ -126,7 +126,6 @@ class Ensime(object):
         self.vim.current.line = (
             'Autocmd: Called %s times, file: %s' % (self.calls, filename))
     def complete_func(self, args):
-        self.log(str(args))
         if args[0] == '1':
             self.complete()
             line = self.vim.eval("getline('.')")
