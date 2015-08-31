@@ -8,10 +8,17 @@ endfunc
 fun EnSend(what)
     ruby <<EOF
     require 'socket'
-    s = TCPSocket.new 'localhost', File.read(".ensime_cache/bridge").to_i
-    what = VIM::evaluate("a:what")
-    s.puts what
-    s.close
+    bridge_file = ".ensime_cache/bridge"
+    begin
+        if File.exists? bridge_file
+            s = TCPSocket.new 'localhost', File.read(bridge_file).to_i
+            what = VIM::evaluate("a:what")
+            s.puts what
+            s.close
+        end
+    rescue Errno::ECONNREFUSED
+        # ignore this
+    end
 EOF
 endfun
 fun EnUnqueue()
@@ -47,19 +54,26 @@ ruby <<EOF
             VIM.command("let g:suggests = #{array}")
         end
     end
-    s = TCPSocket.new 'localhost', File.read(".ensime_cache/bridge").to_i
-    s.puts "unqueue"
-    while true
-        result = s.readline
-        if result.nil? or result.chomp == "nil"
-            break
-        end
-        #VIM::message result
-        json = JSON.parse result
-        handle_palyoad json["payload"] if json["payload"]
+    bridge_file = ".ensime_cache/bridge"
+    if File.exists? bridge_file
+        begin
+            s = TCPSocket.new 'localhost', File.read(bridge_file).to_i
+            s.puts "unqueue"
+            while true
+                result = s.readline
+                if result.nil? or result.chomp == "nil"
+                    break
+                end
+                #VIM::message result
+                json = JSON.parse result
+                handle_palyoad json["payload"] if json["payload"]
 
+            end
+            s.close
+        rescue Errno::ECONNREFUSED
+            # do nothing if there is an error (e.ge
+        end
     end
-    s.close
 EOF
 endfun
 fun EnTypeCheck()
