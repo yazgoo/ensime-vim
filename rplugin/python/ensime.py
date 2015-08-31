@@ -15,8 +15,7 @@ class Ensime(object):
         self.vim.command("highlight EnError ctermbg=red")
         self.is_setup = False
         self.suggests = None
-    @neovim.autocmd('VimLeave', pattern='*.scala', eval='expand("<afile>")',
-                    sync=True)
+    @neovim.autocmd('VimLeave', pattern='*.scala', eval='expand("<afile>")', sync=True)
     def teardown(self, filename):
         subprocess.Popen(["ensime_bridge", "stop"])
     def setup(self):
@@ -60,18 +59,18 @@ class Ensime(object):
         self.send('complete "{}", {}, {}, "{}"'.format(self.path(),
             self.cursor()[0], self.cursor()[1] + 1, content))
     @neovim.command('EnTypeCheck', range='', nargs='*', sync=True)
-    def type_check_cmd(self, args, range):
+    def type_check_cmd(self, args, range = None):
         self.type_check("")
     @neovim.command('EnType', range='', nargs='*', sync=True)
-    def type(self, args, range):
+    def type(self, args, range = None):
         self.path_start_size("type")
     @neovim.command('EnDocUri', range='', nargs='*', sync=True)
-    def doc_uri(self, args, range):
+    def doc_uri(self, args, range = None):
         self.path_start_size("doc_uri")
     @neovim.command('EnDocBrowse', range='', nargs='*', sync=True)
-    def doc_browse(self, args, range) :
+    def doc_browse(self, args, range = None) :
         self.browse = True
-        self.doc_uri(args, range)
+        self.doc_uri(args, range = None)
     def log(self, what):
         f = open("/tmp/a", "a")
         f.write(what + "\n")
@@ -97,6 +96,7 @@ class Ensime(object):
                 e = note["col"] + (note["end"] - note["beg"])
                 self.matches.append(self.vim.eval(
                     "matchadd('EnError', '\\%{}l\\%>{}c\\%<{}c')".format(l, c, e)))
+                self.message(note["msg"])
         elif typehint == "BasicTypeInfo":
             self.message(payload["fullName"])
         elif typehint == "StringResponse":
@@ -108,15 +108,13 @@ class Ensime(object):
             self.message(url)
         elif typehint == "CompletionInfoList":
             self.suggests = [completion["name"] for completion in payload["completions"]]
-    @neovim.autocmd('BufWritePost', pattern='*.scala', eval='expand("<afile>")',
-                    sync=True)
+    @neovim.autocmd('BufWritePost', pattern='*.scala', eval='expand("<afile>")', sync=True)
     def type_check(self, filename):
         self.send("typecheck '{}'".format(self.path()))
         for i in self.matches:
             self.vim.eval("matchdelete({})".format(i))
         self.matches = []
-    @neovim.autocmd('CursorMoved', pattern='*.scala', eval='expand("<afile>")',
-                    sync=True)
+    @neovim.autocmd('CursorMoved', pattern='*.scala', eval='expand("<afile>")', sync=True)
     def unqueue(self, filename):
         self.setup()
         s = self.get_socket()
@@ -136,6 +134,7 @@ class Ensime(object):
             'Autocmd: Called %s times, file: %s' % (self.calls, filename))
     @neovim.function('EnCompleteFunc', sync=True)
     def complete_func(self, args):
+        self.log(str(args))
         if args[0] == '1':
             self.complete()
             line = self.vim.eval("getline('.')")
