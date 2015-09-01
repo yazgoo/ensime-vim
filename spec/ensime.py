@@ -1,4 +1,21 @@
 import unittest, sys, os
+def fakemodule_autocmd(arg):
+    return(arg)
+class fakemodule(object):
+    @staticmethod
+    def plugin(arg):
+        return(arg)
+    @staticmethod
+    def autocmd(arg, **kwargs):
+        return fakemodule_autocmd
+    @staticmethod
+    def command(arg, **kwargs):
+        return fakemodule_autocmd
+    @staticmethod
+    def function(arg, **kwargs):
+        return fakemodule_autocmd
+import sys
+sys.modules["neovim"] = fakemodule
 sys.path.insert(0, os.path.dirname(__file__) + '/../rplugin/python')
 from ensime import Ensime
 from mock import MagicMock
