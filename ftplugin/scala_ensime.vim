@@ -83,6 +83,10 @@ class Ensime(object):
         self.vim.command("echo '{}'".format(m))
     def handle_payload(self, payload):
         typehint = payload["typehint"]
+        if typehint == "IndexerReadyEvent":
+            self.message("ensime indexer ready")
+        if typehint == "AnalyzerReadyEvent":
+            self.message("ensime analyzer ready")
         if typehint == "NewScalaNotesEvent":
             notes = payload["notes"]
             for note in notes:
