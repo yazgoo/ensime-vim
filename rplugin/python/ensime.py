@@ -34,6 +34,8 @@ class Ensime(object):
             port = self.get_cache_port("bridge")
             s.connect(("::1", int(port)))
             return s
+        except IOError:
+            return None
         except socket_error:
             return None
     def send(self, what):
@@ -88,6 +90,10 @@ class Ensime(object):
         self.vim.command("echo '{}'".format(m))
     def handle_payload(self, payload):
         typehint = payload["typehint"]
+        if typehint == "IndexerReadyEvent":
+            self.message("ensime indexer ready")
+        if typehint == "AnalyzerReadyEvent":
+            self.message("ensime analyzer ready")
         if typehint == "NewScalaNotesEvent":
             notes = payload["notes"]
             for note in notes:
