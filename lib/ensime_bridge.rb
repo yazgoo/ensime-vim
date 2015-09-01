@@ -79,6 +79,15 @@ class EnsimeBridge
             sleep 0.2
         end
     end
+    def send_result result
+        if not result.nil? and not result.empty?
+            @client.puts result.gsub("\n", "")
+        else
+            @client.puts "nil"
+            break
+        end
+        log result.gsub("\n", "")
+    end
     def run
         @ensime.quiet = quiet
         @ensime.run
@@ -99,15 +108,14 @@ class EnsimeBridge
             begin
                 command = @client.readline.chomp
                 while true
-                    result = instance_eval command
+                    result = nil
+                    if command.start_with? "{"
+                        @socket.send command
+                    else
+                        result = instance_eval command
+                    end
                     if command == "unqueue"
-                        if not result.nil? and not result.empty?
-                            @client.puts result.gsub("\n", "")
-                        else
-                            @client.puts "nil"
-                            break
-                        end
-                        log result.gsub("\n", "")
+                        send_result result
                     else
                         break
                     end

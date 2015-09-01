@@ -9,15 +9,18 @@ from socket import error as socket_error
 @neovim.plugin
 class Ensime(object):
     def __init__(self, vim):
+        self.callId = 0
         self.browse = False
         self.vim = vim
         self.matches = []
         self.vim.command("highlight EnError ctermbg=red")
         self.is_setup = False
         self.suggests = None
+        self.no_teardown = False
     @neovim.autocmd('VimLeave', pattern='*.scala', eval='expand("<afile>")', sync=True)
     def teardown(self, filename):
-        subprocess.Popen(["ensime_bridge", "stop"])
+        if not self.no_teardown:
+            subprocess.Popen(["ensime_bridge", "stop"])
     def setup(self):
         if not self.is_setup:
             subprocess.Popen(["ensime_bridge", "--quiet"])
@@ -60,6 +63,9 @@ class Ensime(object):
         content = base64.b64encode(content).replace("\n", "!EOL!")
         self.send('complete "{}", {}, {}, "{}"'.format(self.path(),
             self.cursor()[0], self.cursor()[1] + 1, content))
+    @neovim.command('EnNoTeardown', range='', nargs='*', sync=True)
+    def do_no_teardown(self, args, range = None):
+        self.no_teardown = True
     @neovim.command('EnTypeCheck', range='', nargs='*', sync=True)
     def type_check_cmd(self, args, range = None):
         self.type_check("")
@@ -115,8 +121,11 @@ class Ensime(object):
         elif typehint == "CompletionInfoList":
             self.suggests = [completion["name"] for completion in payload["completions"]]
     @neovim.autocmd('BufWritePost', pattern='*.scala', eval='expand("<afile>")', sync=True)
+    def send_request(self, request)
+        self.send({"callId" => self.callId,"req" => })
+        self.callId += 1
     def type_check(self, filename):
-        self.send("typecheck '{}'".format(self.path()))
+        send_request {"typehint": "TypecheckFilesReq","files" : [path]} 
         for i in self.matches:
             self.vim.eval("matchdelete({})".format(i))
         self.matches = []
