@@ -28,7 +28,8 @@ class EnsimeBridge
         @queue = Queue.new
         @bridge_file = "#{@cache}bridge"
         @http_file = "#{@cache}http"
-        @logger = Logger.new(@cache + "bridge.log", 2, 100000)
+        @logger = Logger.new((File.exists?(@cache)?@cache:"/tmp") + 
+                             "bridge.log", 2, 100000)
     end
     def remote_stop
         if is_running?
@@ -39,6 +40,7 @@ class EnsimeBridge
     end
     def stop
         @ensime.stop
+        File.delete @bridge_file if File.exists?  @bridge_file
         exit
     end
     def connect_to_ensime
