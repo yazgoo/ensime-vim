@@ -74,7 +74,7 @@ EOF
             puts "ensime is already running"
         else
             FileUtils.mkdir_p @conf['cache-dir']
-            out = quiet ? "/dev/null" : STDOUT
+            out = quiet ? ".ensime_cache/server.log" : STDOUT
             @pid = Process.spawn(
                 "#{@conf['java-home']}/bin/java #{@conf['java-flags']} \
         -cp #{get_classpath} -Densime.config=#{@conf_path} org.ensime.server.Server",

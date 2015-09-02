@@ -113,6 +113,7 @@ class EnsimeBridge
                     result = nil
                     @logger.info "command: #{command}"
                     if command.start_with? "{"
+                        @logger.info "direct send #{command}"
                         @socket.send command
                     else
                         result = instance_eval command
@@ -140,18 +141,6 @@ class EnsimeBridge
         end
         i
     end
-    def at_point what, path, row, col, size, where = "range"
-        i = to_position path, row, col
-        req({"typehint" => what + "AtPointReq",
-            "file" => path,
-            where => {"from" => i,"to" => i + size}})
-    end
-    def type path, row, col, size
-        at_point "Type", path, row, col, size
-    end
-    def doc_uri path, row, col, size
-        at_point "DocUri", path, row, col, size, "point"
-    end
     def complete path, row, col, contents = nil
         i = to_position path, row, col
         fileinfo = {"file"=>path}
@@ -160,9 +149,6 @@ class EnsimeBridge
         end
         req({"point"=>i, "maxResults"=>100,"typehint"=>"CompletionsReq",
             "caseSens"=>true,"fileInfo"=> fileinfo,"reload"=>false})
-    end
-    def typecheck path
-        req({"typehint"=>"TypecheckFilesReq","files" => [path]})
     end
 end
 EnsimeBridge.new(ARGV.size == 0 ? ".ensime" : ARGV[0]).run if __FILE__ == $0

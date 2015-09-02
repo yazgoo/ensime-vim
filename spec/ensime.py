@@ -20,8 +20,8 @@ sys.path.insert(0, os.path.dirname(__file__) + '/../rplugin/python')
 from ensime import Ensime
 from mock import MagicMock
 class TestVimBuffer:
-    def name(self):
-        "blah" 
+    def __init__(self):
+        self.name =  __file__
 class TestVimWindow:
     def __init__(self):
         self.cursor = [42, 42] 

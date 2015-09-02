@@ -7,15 +7,19 @@ import subprocess
 import re
 import base64
 import logging
+import time
 from socket import error as socket_error
 class Ensime(object):
+    def log(self, what):
+        log_dir = "/tmp/"
+        if os.path.isdir(self.ensime_cache):
+            log_dir = self.ensime_cache
+        f = open(log_dir + "ensime-vim.log", "a")
+        f.write("{}: {}\n".format(time.strftime("%Y-%m-%d %H:%M:%S"), what))
+        f.close()
     def __init__(self, vim):
         self.ensime_cache = ".ensime_cache/"
-        log_dir = "/tmp/"
-        if os.path.isdir(self.ensime_cache): log_dir = self.ensime_cache
-        logging.basicConfig(filename="ensime-vim.log")
-        self.logger = logging.getLogger("ensime-vim")
-        self.logger.info("__init__: in")
+        self.log("__init__: in")
         self.callId = 0
         self.browse = False
         self.vim = vim
@@ -28,26 +32,26 @@ class Ensime(object):
         binary = os.environ.get("ENSIME_BRIDGE")
         if binary == None: binary = "ensime_bridge"
         binary = (binary + " " + action)
-        self.logger.info("ensime_bridge: lanching " + binary) 
+        self.log("ensime_bridge: lanching " + binary) 
         subprocess.Popen(binary.split())
     def teardown(self, filename):
-        self.logger.info("teardown: in")
+        self.log("teardown: in")
         if not self.no_teardown:
             self.ensime_bridge("stop")
     def setup(self):
-        self.logger.info("setup: in")
+        self.log("setup: in")
         if not self.is_setup:
             self.ensime_bridge("--quiet")
             self.vim.command("set completefunc=EnCompleteFunc")
             self.is_setup = True
     def get_cache_port(self, where):
-        self.logger.info("get_cache_port: in")
-        f = open(".ensime_cache/" + where)
+        self.log("get_cache_port: in")
+        f = open(self.ensime_cache + where)
         port = f.read()
         f.close()
         return port.replace("\n", "")
     def get_socket(self):
-        self.logger.info("get_socket: in")
+        self.log("get_socket: in")
         try:
             s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
             port = self.get_cache_port("bridge")
@@ -58,50 +62,63 @@ class Ensime(object):
         except socket_error:
             return None
     def send(self, what):
-        self.logger.info("send: in")
+        self.log("send: in")
         s = self.get_socket()
-        if s == None: return
+        if s == None:
+            self.log("send: could not get socket")
+            return
+        self.log("send: {}".format(what))
         s.send(what + "\n")
         s.close()
     def cursor(self):
-        self.logger.info("cursor: in")
+        self.log("cursor: in")
         return self.vim.current.window.cursor
     def path(self):
-        self.logger.info("path: in")
+        self.log("path: in")
         return self.vim.current.buffer.name
-    def path_start_size(self, what):
-        self.logger.info("path_start_size: in")
+    def path_start_size(self, what, where = "range"):
+        self.log("path_start_size: in")
         self.vim.command("normal e")
         e = self.cursor()[1]
         self.vim.command("normal b")
         b = self.cursor()[1]
         s = e - b
-        self.send('{} "{}", {}, {}, {}'.format(what,
-            self.path(), self.cursor()[0], b + 1, s))
+        self.send_at_point(what, self.path(), self.cursor()[0], b + 1, s, where)
     def complete(self):
-        self.logger.info("complete: in")
+        self.log("complete: in")
         content = self.vim.eval('join(getline(1, "$"), "\n")')
         content = base64.b64encode(content).replace("\n", "!EOL!")
         self.send('complete "{}", {}, {}, "{}"'.format(self.path(),
             self.cursor()[0], self.cursor()[1] + 1, content))
+    def get_position(self, row, col):
+        result = col -1
+        f = open(self.path())
+        result += sum([len(f.readline()) for i in range(row - 1)])
+        f.close()
+        return result
+    def send_at_point(self, what, path, row, col, size, where = "range"):
+        i = self.get_position(row, col)
+        self.send_request({"typehint" : what + "AtPointReq",
+            "file" : path,
+            where : {"from": i,"to": i + size}})
     def do_no_teardown(self, args, range = None):
-        self.logger.info("do_no_teardown: in")
+        self.log("do_no_teardown: in")
         self.no_teardown = True
     def type_check_cmd(self, args, range = None):
-        self.logger.info("type_check_cmd: in")
+        self.log("type_check_cmd: in")
         self.type_check("")
     def type(self, args, range = None):
-        self.logger.info("type: in")
-        self.path_start_size("type")
+        self.log("type: in")
+        self.path_start_size("Type")
     def doc_uri(self, args, range = None):
-        self.logger.info("doc_uri: in")
-        self.path_start_size("doc_uri")
+        self.log("doc_uri: in")
+        self.path_start_size("DocUri", "point")
     def doc_browse(self, args, range = None) :
-        self.logger.info("browse: in")
+        self.log("browse: in")
         self.browse = True
         self.doc_uri(args, range = None)
     def read_line(self, s):
-        self.logger.info("read_line: in")
+        self.log("read_line: in")
         ret = ''
         while True:
             c = s.recv(1)
@@ -111,10 +128,10 @@ class Ensime(object):
                 ret += c
         return ret
     def message(self, m):
-        self.logger.info("message: in")
+        self.log("message: in")
         self.vim.command("echo '{}'".format(m))
     def handle_payload(self, payload):
-        self.logger.info("handle_payload: in")
+        self.log("handle_payload: in")
         typehint = payload["typehint"]
         if typehint == "IndexerReadyEvent":
             self.message("ensime indexer ready")
@@ -141,34 +158,34 @@ class Ensime(object):
         elif typehint == "CompletionInfoList":
             self.suggests = [completion["name"] for completion in payload["completions"]]
     def send_request(self, request):
-        self.logger.info("send_request: in")
+        self.log("send_request: in")
         self.send(json.dumps({"callId" : self.callId,"req" : request}))
         self.callId += 1
     def type_check(self, filename):
-        self.logger.info("type_check: in")
+        self.log("type_check: in")
         self.send_request({"typehint": "TypecheckFilesReq",
             "files" : [self.path()]})
         for i in self.matches:
             self.vim.eval("matchdelete({})".format(i))
         self.matches = []
     def unqueue(self, filename):
-        self.logger.info("unqueue: in")
+        self.log("unqueue: in")
         self.setup()
         s = self.get_socket()
         if s == None: return
         s.send("unqueue\n")
         while True:
             result = self.read_line(s)
-            self.logger.info("unqueue: result received {}".format(str(result)))
+            self.log("unqueue: result received {}".format(str(result)))
             if result == None or result == "nil":
-                self.logger.info("unqueue: nil or None received")
+                self.log("unqueue: nil or None received")
                 break
             _json = json.loads(result)
             if _json["payload"] != None:
                 self.handle_payload(_json["payload"])
-        self.logger.info("unqueue: before close")
+        self.log("unqueue: before close")
         s.close()
-        self.logger.info("unqueue: after close")
+        self.log("unqueue: after close")
     def autocmd_handler(self, filename):
         self._increment_calls()
         self.vim.current.line = (
