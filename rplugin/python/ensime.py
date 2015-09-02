@@ -139,6 +139,23 @@ class Ensime(object):
     def message(self, m):
         self.log("message: in")
         self.vim.command("echo '{}'".format(m))
+    def handle_new_scala_notes_event(self, notes):
+        for note in notes:
+            l = note["line"]
+            c = note["col"] - 1
+            e = note["col"] + (note["end"] - note["beg"])
+            self.matches.append(self.vim.eval(
+                "matchadd('EnError', '\\%{}l\\%>{}c\\%<{}c')".format(l, c, e)))
+            self.message(note["msg"])
+    def handle_string_response(self, payload):
+        url = "http://127.0.0.1:{}/{}".format(self.get_cache_port("http"),
+                payload["text"])
+        if self.browse:
+            subprocess.Popen([os.environ.get("BROWSER"), url])
+            self.browse = False
+        self.message(url)
+    def handle_completion_info_list(self, completions):
+        self.suggests = [completion["name"] for completion in completions]
     def handle_payload(self, payload):
         self.log("handle_payload: in")
         typehint = payload["typehint"]
@@ -147,25 +164,13 @@ class Ensime(object):
         if typehint == "AnalyzerReadyEvent":
             self.message("ensime analyzer ready")
         if typehint == "NewScalaNotesEvent":
-            notes = payload["notes"]
-            for note in notes:
-                l = note["line"]
-                c = note["col"] - 1
-                e = note["col"] + (note["end"] - note["beg"])
-                self.matches.append(self.vim.eval(
-                    "matchadd('EnError', '\\%{}l\\%>{}c\\%<{}c')".format(l, c, e)))
-                self.message(note["msg"])
+            self.handle_new_scala_notes_event(payload["notes"])
         elif typehint == "BasicTypeInfo":
             self.message(payload["fullName"])
         elif typehint == "StringResponse":
-            url = "http://127.0.0.1:{}/{}".format(self.get_cache_port("http"),
-                    payload["text"])
-            if self.browse:
-                subprocess.Popen([os.environ.get("BROWSER"), url])
-                self.browse = False
-            self.message(url)
+            self.handle_string_response(payload)
         elif typehint == "CompletionInfoList":
-            self.suggests = [completion["name"] for completion in payload["completions"]]
+            self.handle_completion_info_list(payload["completions"])
     def send_request(self, request):
         self.log("send_request: in")
         self.send(json.dumps({"callId" : self.callId,"req" : request}))
