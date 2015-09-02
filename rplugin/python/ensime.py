@@ -85,18 +85,21 @@ class Ensime(object):
         b = self.cursor()[1]
         s = e - b
         self.send_at_point(what, self.path(), self.cursor()[0], b + 1, s, where)
-    def complete(self):
-        self.log("complete: in")
-        content = self.vim.eval('join(getline(1, "$"), "\n")')
-        content = base64.b64encode(content).replace("\n", "!EOL!")
-        self.send('complete "{}", {}, {}, "{}"'.format(self.path(),
-            self.cursor()[0], self.cursor()[1] + 1, content))
     def get_position(self, row, col):
         result = col -1
         f = open(self.path())
         result += sum([len(f.readline()) for i in range(row - 1)])
         f.close()
         return result
+    def complete(self):
+        self.log("complete: in")
+        content = self.vim.eval('join(getline(1, "$"), "\n")')
+        pos = self.get_position(self.cursor()[0], self.cursor()[1] + 1)
+        self.send_request({"point": pos, "maxResults":100,
+            "typehint":"CompletionsReq",
+            "caseSens":True,
+            "fileInfo": {"file": self.path(), "contents": content},
+            "reload":False})
     def send_at_point(self, what, path, row, col, size, where = "range"):
         i = self.get_position(row, col)
         self.send_request({"typehint" : what + "AtPointReq",

@@ -58,16 +58,6 @@ class EnsimeBridge
             @logger.info "Disconnected with status code: #{code} #{reason}"
         end
     end
-    def json packet
-        s = packet.to_json
-        @logger.info " to server => #{s}"
-        @socket.send s
-    end
-    def req message
-        @i ||= 0
-        @i += 1
-        json({"callId" => @i,"req" => message})
-    end
     def unqueue
         if @queue.size == 0
             nil
@@ -130,25 +120,6 @@ class EnsimeBridge
                 @logger.error e.backtrace
             end
         end
-    end
-    def to_position path, row, col
-        i = -1
-        File.open(path) do |f|
-            (row - 1).times do
-                i += f.readline.size
-            end
-            i += col
-        end
-        i
-    end
-    def complete path, row, col, contents = nil
-        i = to_position path, row, col
-        fileinfo = {"file"=>path}
-        if contents
-            fileinfo["contents"] = Base64.decode64(contents.gsub("!EOL!", "\n"))
-        end
-        req({"point"=>i, "maxResults"=>100,"typehint"=>"CompletionsReq",
-            "caseSens"=>true,"fileInfo"=> fileinfo,"reload"=>false})
     end
 end
 EnsimeBridge.new(ARGV.size == 0 ? ".ensime" : ARGV[0]).run if __FILE__ == $0
