@@ -16,12 +16,12 @@ class Ensime
     def initialize conf_path
         @quiet = false
         @conf_path = conf_path
+        @version = "0.9.10-SNAPSHOT"
         @conf = Hash[File.read(conf_path).gsub("\n", "").gsub(
             "(", " ").gsub(")", " ").gsub('"', "").split(" :").collect do |x|
             m = x.match("\([^ ]*\) *\(.*\)$")
             [m[1], m[2]]
-            end]
-        @version = "0.9.10-SNAPSHOT"
+            end] if File.exists? conf_path
     end
     def get_classpath
         log = nil 
@@ -66,6 +66,10 @@ EOF
         classpath + ":#{@conf['java-home']}/lib/tools.jar"
     end
     def run
+        if @conf.nil?
+            puts "no #{@conf_path} file found" if not quiet
+            return
+        end
         if is_running?
             puts "ensime is already running"
         else

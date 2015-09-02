@@ -3,6 +3,7 @@ require 'websocket-eventmachine-client'
 require 'json'
 require 'thread'
 require 'base64'
+require 'logger'
 require_relative 'ensime'
 class EnsimeBridge
     attr_accessor :socket, :quiet
@@ -27,39 +28,39 @@ class EnsimeBridge
         @queue = Queue.new
         @bridge_file = "#{@cache}bridge"
         @http_file = "#{@cache}http"
+        @logger = Logger.new(@cache + "bridge.log", 2, 100000)
     end
     def remote_stop
-        s = get_socket(@bridge_file)
-        s.puts "self.stop"
-        s.close
+        if is_running?
+            s = get_socket(@bridge_file)
+            s.puts "self.stop"
+            s.close
+        end
     end
     def stop
         @ensime.stop
         exit
     end
-    def log what
-        Kernel.puts what.to_s if not quiet
-    end
     def connect_to_ensime
         url = "ws://127.0.0.1:#{File.read("#{@cache}http").chomp}/jerky"
         @socket = WebSocket::EventMachine::Client.connect(:uri => url)
         @socket.onopen do
-            log "Connected!"
+            @logger.info "Connected to ensime!"
         end
         @socket.onerror do |err|
-            log err
+            @logger.error err
         end
         @socket.onmessage do |msg, type|
-            log "Received message: #{msg}, type #{type}"
+            @logger.info "Received message: #{msg}, type #{type}"
             @queue << msg
         end
         @socket.onclose do |code, reason|
-            log "Disconnected with status code: #{code} #{reason}"
+            @logger.info "Disconnected with status code: #{code} #{reason}"
         end
     end
     def json packet
         s = packet.to_json
-        log " to server => #{s}"
+        @logger.info " to server => #{s}"
         @socket.send s
     end
     def req message
@@ -79,15 +80,25 @@ class EnsimeBridge
             sleep 0.2
         end
     end
+    def send_result result
+        if not result.nil? and not result.empty?
+            @client.puts result.gsub("\n", "")
+        else
+            @client.puts "nil"
+            return false
+        end
+        @logger.info result.gsub("\n", "")
+        return true
+    end
     def run
         @ensime.quiet = quiet
         @ensime.run
         if is_running?
-            log "bridge is already running"
+            @logger.info "bridge is already running"
             return
         end
         wait_for_ensime
-        log "ensime is ready"
+        @logger.info "ensime is ready"
         Thread.new do
             EventMachine.run do
                 connect_to_ensime
@@ -99,23 +110,23 @@ class EnsimeBridge
             begin
                 command = @client.readline.chomp
                 while true
-                    result = instance_eval command
+                    result = nil
+                    @logger.info "command: #{command}"
+                    if command.start_with? "{"
+                        @socket.send command
+                    else
+                        result = instance_eval command
+                    end
                     if command == "unqueue"
-                        if not result.nil? and not result.empty?
-                            @client.puts result.gsub("\n", "")
-                        else
-                            @client.puts "nil"
-                            break
-                        end
-                        log result.gsub("\n", "")
+                        break if not send_result result
                     else
                         break
                     end
                 end
                 @client.close
             rescue => e
-                log e
-                log e.backtrace
+                @logger.error e
+                @logger.error e.backtrace
             end
         end
     end
