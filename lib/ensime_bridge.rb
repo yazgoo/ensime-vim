@@ -22,13 +22,18 @@ class EnsimeBridge
         true
     end
     def initialize path
-        @ensime = Ensime.new(path)
         @quiet = false
         @cache = "#{path}_cache/"
-        @queue = Queue.new
         @bridge_file = "#{@cache}bridge"
         @http_file = "#{@cache}http"
-        @logger = Logger.new(@cache + "bridge.log", 2, 100000)
+        if not File.exists? path
+            @no_ensime_config = true
+            return
+        end
+        @ensime = Ensime.new(path)
+        @queue = Queue.new
+        @logger = Logger.new((File.exists?(@cache)?@cache:"/tmp/") + 
+                             "bridge.log", 2, 100000)
     end
     def remote_stop
         if is_running?
@@ -39,6 +44,7 @@ class EnsimeBridge
     end
     def stop
         @ensime.stop
+        File.delete @bridge_file if File.exists?  @bridge_file
         exit
     end
     def connect_to_ensime
@@ -57,16 +63,6 @@ class EnsimeBridge
         @socket.onclose do |code, reason|
             @logger.info "Disconnected with status code: #{code} #{reason}"
         end
-    end
-    def json packet
-        s = packet.to_json
-        @logger.info " to server => #{s}"
-        @socket.send s
-    end
-    def req message
-        @i ||= 0
-        @i += 1
-        json({"callId" => @i,"req" => message})
     end
     def unqueue
         if @queue.size == 0
@@ -91,6 +87,7 @@ class EnsimeBridge
         return true
     end
     def run
+        return if @no_ensime_config
         @ensime.quiet = quiet
         @ensime.run
         if is_running?
@@ -113,6 +110,7 @@ class EnsimeBridge
                     result = nil
                     @logger.info "command: #{command}"
                     if command.start_with? "{"
+                        @logger.info "direct send #{command}"
                         @socket.send command
                     else
                         result = instance_eval command
@@ -129,40 +127,6 @@ class EnsimeBridge
                 @logger.error e.backtrace
             end
         end
-    end
-    def to_position path, row, col
-        i = -1
-        File.open(path) do |f|
-            (row - 1).times do
-                i += f.readline.size
-            end
-            i += col
-        end
-        i
-    end
-    def at_point what, path, row, col, size, where = "range"
-        i = to_position path, row, col
-        req({"typehint" => what + "AtPointReq",
-            "file" => path,
-            where => {"from" => i,"to" => i + size}})
-    end
-    def type path, row, col, size
-        at_point "Type", path, row, col, size
-    end
-    def doc_uri path, row, col, size
-        at_point "DocUri", path, row, col, size, "point"
-    end
-    def complete path, row, col, contents = nil
-        i = to_position path, row, col
-        fileinfo = {"file"=>path}
-        if contents
-            fileinfo["contents"] = Base64.decode64(contents.gsub("!EOL!", "\n"))
-        end
-        req({"point"=>i, "maxResults"=>100,"typehint"=>"CompletionsReq",
-            "caseSens"=>true,"fileInfo"=> fileinfo,"reload"=>false})
-    end
-    def typecheck path
-        req({"typehint"=>"TypecheckFilesReq","files" => [path]})
     end
 end
 EnsimeBridge.new(ARGV.size == 0 ? ".ensime" : ARGV[0]).run if __FILE__ == $0
