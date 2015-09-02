@@ -22,13 +22,17 @@ class EnsimeBridge
         true
     end
     def initialize path
-        @ensime = Ensime.new(path)
         @quiet = false
         @cache = "#{path}_cache/"
-        @queue = Queue.new
         @bridge_file = "#{@cache}bridge"
         @http_file = "#{@cache}http"
-        @logger = Logger.new((File.exists?(@cache)?@cache:"/tmp") + 
+        if not File.exists? path
+            @no_ensime_config = true
+            return
+        end
+        @ensime = Ensime.new(path)
+        @queue = Queue.new
+        @logger = Logger.new((File.exists?(@cache)?@cache:"/tmp/") + 
                              "bridge.log", 2, 100000)
     end
     def remote_stop
@@ -83,6 +87,7 @@ class EnsimeBridge
         return true
     end
     def run
+        return if @no_ensime_config
         @ensime.quiet = quiet
         @ensime.run
         if is_running?
