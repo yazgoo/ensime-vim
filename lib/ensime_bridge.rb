@@ -32,8 +32,8 @@ class EnsimeBridge
         end
         @ensime = Ensime.new(path)
         @queue = Queue.new
-        @logger = Logger.new((File.exists?(@cache)?@cache:"/tmp/") + 
-                             "bridge.log", 2, 100000)
+        Dir.mkdir @cache if not File.exists?(@cache)
+        @logger = Logger.new(@cache+"bridge.log", 2, 100000)
     end
     def remote_stop
         if is_running?
@@ -86,6 +86,44 @@ class EnsimeBridge
         @logger.info result.gsub("\n", "")
         return true
     end
+    def run_ensime_connection
+        Thread.new do
+            EventMachine.run do
+                connect_to_ensime
+            end
+        end
+    end
+    def send_command command
+        while true
+            result = nil
+            @logger.info "command: #{command}"
+            if command.start_with? "{"
+                @logger.info "direct send #{command}"
+                @socket.send command
+            else
+                result = instance_eval command
+            end
+            if command == "unqueue"
+                break if not send_result result
+            else
+                break
+            end
+        end
+    end
+    def run_forwarder
+        server = TCPServer.new "localhost", 0
+        File.write(@bridge_file, server.addr[1])
+        while @client = server.accept
+            begin
+                command = @client.readline.chomp
+                send_command command
+                @client.close
+            rescue => e
+                @logger.error e
+                @logger.error e.backtrace
+            end
+        end
+    end
     def run
         return if @no_ensime_config
         @ensime.quiet = quiet
@@ -96,37 +134,8 @@ class EnsimeBridge
         end
         wait_for_ensime
         @logger.info "ensime is ready"
-        Thread.new do
-            EventMachine.run do
-                connect_to_ensime
-            end
-        end
-        server = TCPServer.new "localhost", 0
-        File.write(@bridge_file, server.addr[1])
-        while @client = server.accept
-            begin
-                command = @client.readline.chomp
-                while true
-                    result = nil
-                    @logger.info "command: #{command}"
-                    if command.start_with? "{"
-                        @logger.info "direct send #{command}"
-                        @socket.send command
-                    else
-                        result = instance_eval command
-                    end
-                    if command == "unqueue"
-                        break if not send_result result
-                    else
-                        break
-                    end
-                end
-                @client.close
-            rescue => e
-                @logger.error e
-                @logger.error e.backtrace
-            end
-        end
+        run_ensime_connection
+        run_forwarder
     end
 end
 EnsimeBridge.new(ARGV.size == 0 ? ".ensime" : ARGV[0]).run if __FILE__ == $0

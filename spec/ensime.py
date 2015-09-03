@@ -50,6 +50,8 @@ class TestEnsime(unittest.TestCase):
     def test_path_start_size(self):
         self.vim.command = MagicMock()
         self.ensime.path_start_size("blah")
-        assert(self.vim.command.call_args_list == [(('normal e',), {}), (('normal b',), {})])
+        assert((('normal e',), {}) in self.vim.command.call_args_list)
+        assert((('normal b',), {}) in self.vim.command.call_args_list)
+
 if __name__ == '__main__':
     unittest.main()

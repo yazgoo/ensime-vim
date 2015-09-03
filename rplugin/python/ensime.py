@@ -7,6 +7,7 @@ import re
 import base64
 import logging
 import time
+import thread
 from socket import error as socket_error
 @neovim.plugin
 class Ensime(object):
@@ -17,6 +18,10 @@ class Ensime(object):
         f = open(log_dir + "ensime-vim.log", "a")
         f.write("{}: {}\n".format(time.strftime("%Y-%m-%d %H:%M:%S"), what))
         f.close()
+    def unqueue_poll(self):
+        while True:
+            self.unqueue(None)
+            time.sleep(1)
     def __init__(self, vim):
         self.ensime_cache = ".ensime_cache/"
         self.log("__init__: in")
@@ -28,6 +33,7 @@ class Ensime(object):
         self.is_setup = False
         self.suggests = None
         self.no_teardown = False
+        #thread.start_new_thread(self.unqueue_poll, ()) #if neovim
     def ensime_bridge(self, action):
         binary = os.environ.get("ENSIME_BRIDGE")
         if binary == None: binary = "ensime_bridge"
@@ -117,6 +123,12 @@ class Ensime(object):
     def type(self, args, range = None):
         self.log("type: in")
         self.path_start_size("Type")
+    @neovim.command('EnSymbol', range='', nargs='*', sync=True)
+    def symbol(self, args, range = None):
+        self.log("symbol: in")
+        pos = self.get_position(self.cursor()[0], self.cursor()[1] + 1)
+        self.send_request({
+            "point": pos, "typehint":"SymbolAtPointReq", "file":self.path()})
     @neovim.command('EnDocUri', range='', nargs='*', sync=True)
     def doc_uri(self, args, range = None):
         self.log("doc_uri: in")
@@ -159,11 +171,13 @@ class Ensime(object):
     def handle_payload(self, payload):
         self.log("handle_payload: in")
         typehint = payload["typehint"]
-        if typehint == "IndexerReadyEvent":
+        if typehint == "SymbolInfo":
+            self.message(payload["declPos"]["file"])
+        elif typehint == "IndexerReadyEvent":
             self.message("ensime indexer ready")
-        if typehint == "AnalyzerReadyEvent":
+        elif typehint == "AnalyzerReadyEvent":
             self.message("ensime analyzer ready")
-        if typehint == "NewScalaNotesEvent":
+        elif typehint == "NewScalaNotesEvent":
             self.handle_new_scala_notes_event(payload["notes"])
         elif typehint == "BasicTypeInfo":
             self.message(payload["fullName"])
