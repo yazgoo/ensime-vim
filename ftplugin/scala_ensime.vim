@@ -8,6 +8,7 @@ import re
 import base64
 import logging
 import time
+import thread
 from socket import error as socket_error
 class Ensime(object):
     def log(self, what):
@@ -17,6 +18,10 @@ class Ensime(object):
         f = open(log_dir + "ensime-vim.log", "a")
         f.write("{}: {}\n".format(time.strftime("%Y-%m-%d %H:%M:%S"), what))
         f.close()
+    def unqueue_poll(self):
+        while True:
+            self.unqueue(None)
+            time.sleep(1)
     def __init__(self, vim):
         self.ensime_cache = ".ensime_cache/"
         self.log("__init__: in")
@@ -28,6 +33,7 @@ class Ensime(object):
         self.is_setup = False
         self.suggests = None
         self.no_teardown = False
+
     def ensime_bridge(self, action):
         binary = os.environ.get("ENSIME_BRIDGE")
         if binary == None: binary = "ensime_bridge"
@@ -113,6 +119,11 @@ class Ensime(object):
     def type(self, args, range = None):
         self.log("type: in")
         self.path_start_size("Type")
+    def symbol(self, args, range = None):
+        self.log("symbol: in")
+        pos = self.get_position(self.cursor()[0], self.cursor()[1] + 1)
+        self.send_request({
+            "point": pos, "typehint":"SymbolAtPointReq", "file":self.path()})
     def doc_uri(self, args, range = None):
         self.log("doc_uri: in")
         self.path_start_size("DocUri", "point")
@@ -133,33 +144,40 @@ class Ensime(object):
     def message(self, m):
         self.log("message: in")
         self.vim.command("echo '{}'".format(m))
+    def handle_new_scala_notes_event(self, notes):
+        for note in notes:
+            l = note["line"]
+            c = note["col"] - 1
+            e = note["col"] + (note["end"] - note["beg"])
+            self.matches.append(self.vim.eval(
+                "matchadd('EnError', '\\%{}l\\%>{}c\\%<{}c')".format(l, c, e)))
+            self.message(note["msg"])
+    def handle_string_response(self, payload):
+        url = "http://127.0.0.1:{}/{}".format(self.get_cache_port("http"),
+                payload["text"])
+        if self.browse:
+            subprocess.Popen([os.environ.get("BROWSER"), url])
+            self.browse = False
+        self.message(url)
+    def handle_completion_info_list(self, completions):
+        self.suggests = [completion["name"] for completion in completions]
     def handle_payload(self, payload):
         self.log("handle_payload: in")
         typehint = payload["typehint"]
-        if typehint == "IndexerReadyEvent":
+        if typehint == "SymbolInfo":
+            self.message(payload["declPos"]["file"])
+        elif typehint == "IndexerReadyEvent":
             self.message("ensime indexer ready")
-        if typehint == "AnalyzerReadyEvent":
+        elif typehint == "AnalyzerReadyEvent":
             self.message("ensime analyzer ready")
-        if typehint == "NewScalaNotesEvent":
-            notes = payload["notes"]
-            for note in notes:
-                l = note["line"]
-                c = note["col"] - 1
-                e = note["col"] + (note["end"] - note["beg"])
-                self.matches.append(self.vim.eval(
-                    "matchadd('EnError', '\\%{}l\\%>{}c\\%<{}c')".format(l, c, e)))
-                self.message(note["msg"])
+        elif typehint == "NewScalaNotesEvent":
+            self.handle_new_scala_notes_event(payload["notes"])
         elif typehint == "BasicTypeInfo":
             self.message(payload["fullName"])
         elif typehint == "StringResponse":
-            url = "http://127.0.0.1:{}/{}".format(self.get_cache_port("http"),
-                    payload["text"])
-            if self.browse:
-                subprocess.Popen([os.environ.get("BROWSER"), url])
-                self.browse = False
-            self.message(url)
+            self.handle_string_response(payload)
         elif typehint == "CompletionInfoList":
-            self.suggests = [completion["name"] for completion in payload["completions"]]
+            self.handle_completion_info_list(payload["completions"])
     def send_request(self, request):
         self.log("send_request: in")
         self.send(json.dumps({"callId" : self.callId,"req" : request}))
@@ -279,6 +297,15 @@ let res = g:__result
 unlet g:__result
 return res
 endfun
+fun! Ensymbol(arg0, arg1)
+python <<EOF
+r = plugin.symbol([vim.eval('a:arg0'), vim.eval('a:arg1')])
+vim.command('let g:__result = ' + json.dumps(([] if r == None else r)))
+EOF
+let res = g:__result
+unlet g:__result
+return res
+endfun
 fun! Endoc_uri(arg0, arg1)
 python <<EOF
 r = plugin.doc_uri([vim.eval('a:arg0'), vim.eval('a:arg1')])
@@ -306,5 +333,6 @@ augroup END
 command! -nargs=0 EnNoTeardown call Endo_no_teardown('', '')
 command! -nargs=0 EnTypeCheck call Entype_check_cmd('', '')
 command! -nargs=0 EnType call Entype('', '')
+command! -nargs=0 EnSymbol call Ensymbol('', '')
 command! -nargs=0 EnDocUri call Endoc_uri('', '')
 command! -nargs=0 EnDocBrowse call Endoc_browse('', '')

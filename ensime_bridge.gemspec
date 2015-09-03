@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name        = 'ensime_bridge'
-  s.version     = '0.0.6'
+  s.version     = '0.0.7'
   s.executables << "ensime_bridge"
   s.date        = '2015-08-31'
   s.summary     = "ensime bridge"

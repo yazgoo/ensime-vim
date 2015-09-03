@@ -53,6 +53,7 @@ Finally, launch vim with the file(s) you want to edit:
 command         |   description                                                | vim | neovim
 ----------------|--------------------------------------------------------------|-----|-----------------
 EnType          | displays type under cursor                                   |  x  |   x
+EnSymbol        | displays the path where the symbol under cursor was declared |  x  |   x
 EnDocUri        | displays documentation url under cursor                      |  x  |   x
 EnDocBrowse     | launch $BROWSER (env variable) documentation url             |  x  |   x
 EnTypeCheck     | launch a check on current file (launched on save)            |  x  |   x
