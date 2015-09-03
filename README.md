@@ -50,14 +50,15 @@ Finally, launch vim with the file(s) you want to edit:
 # available commands
 
 
-command         |   description                                                | vim | neovim
-----------------|--------------------------------------------------------------|-----|-----------------
-EnType          | displays type under cursor                                   |  x  |   x
-EnSymbol        | displays the path where the symbol under cursor was declared |  x  |   x
-EnDocUri        | displays documentation url under cursor                      |  x  |   x
-EnDocBrowse     | launch $BROWSER (env variable) documentation url             |  x  |   x
-EnTypeCheck     | launch a check on current file (launched on save)            |  x  |   x
-EnCompleteFunc  | get an autocompletion menu (via ctrl+X ctrl+U) - blocking    |  x  |   x
+command         |   description                                                
+----------------|--------------------------------------------------------------
+EnType          | displays type under cursor                                   
+EnSymbol        | displays the path where the symbol under cursor was declared 
+EnDeclaration   | vsplit window  where the symbol under cursor was declared    
+EnDocUri        | displays documentation url under cursor                      
+EnDocBrowse     | launch $BROWSER (env variable) documentation url             
+EnTypeCheck     | launch a check on current file (launched on save)            
+EnCompleteFunc  | get an autocompletion menu (via ctrl+X ctrl+U) - blocking    
 
 
 # design

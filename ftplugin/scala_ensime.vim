@@ -33,6 +33,7 @@ class Ensime(object):
         self.is_setup = False
         self.suggests = None
         self.no_teardown = False
+        self.open_definition = False
 
     def ensime_bridge(self, action):
         binary = os.environ.get("ENSIME_BRIDGE")
@@ -119,11 +120,17 @@ class Ensime(object):
     def type(self, args, range = None):
         self.log("type: in")
         self.path_start_size("Type")
-    def symbol(self, args, range = None):
-        self.log("symbol: in")
+    def symbol_at_point_req(self, open_definition):
+        self.open_definition = open_definition
         pos = self.get_position(self.cursor()[0], self.cursor()[1] + 1)
         self.send_request({
             "point": pos, "typehint":"SymbolAtPointReq", "file":self.path()})
+    def open_declaration(self, args, range = None):
+        self.log("open_declaration: in")
+        self.symbol_at_point_req(True)
+    def symbol(self, args, range = None):
+        self.log("symbol: in")
+        self.symbol_at_point_req(True)
     def doc_uri(self, args, range = None):
         self.log("doc_uri: in")
         self.path_start_size("DocUri", "point")
@@ -166,6 +173,9 @@ class Ensime(object):
         typehint = payload["typehint"]
         if typehint == "SymbolInfo":
             self.message(payload["declPos"]["file"])
+            if self.open_definition:
+                self.vim.command(":vsplit {}".format(
+                    payload["declPos"]["file"]))
         elif typehint == "IndexerReadyEvent":
             self.message("ensime indexer ready")
         elif typehint == "AnalyzerReadyEvent":
@@ -297,6 +307,15 @@ let res = g:__result
 unlet g:__result
 return res
 endfun
+fun! Enopen_declaration(arg0, arg1)
+python <<EOF
+r = plugin.open_declaration([vim.eval('a:arg0'), vim.eval('a:arg1')])
+vim.command('let g:__result = ' + json.dumps(([] if r == None else r)))
+EOF
+let res = g:__result
+unlet g:__result
+return res
+endfun
 fun! Ensymbol(arg0, arg1)
 python <<EOF
 r = plugin.symbol([vim.eval('a:arg0'), vim.eval('a:arg1')])
@@ -333,6 +352,7 @@ augroup END
 command! -nargs=0 EnNoTeardown call Endo_no_teardown('', '')
 command! -nargs=0 EnTypeCheck call Entype_check_cmd('', '')
 command! -nargs=0 EnType call Entype('', '')
+command! -nargs=0 EnDeclaration call Enopen_declaration('', '')
 command! -nargs=0 EnSymbol call Ensymbol('', '')
 command! -nargs=0 EnDocUri call Endoc_uri('', '')
 command! -nargs=0 EnDocBrowse call Endoc_browse('', '')

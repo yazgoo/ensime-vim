@@ -33,6 +33,7 @@ class Ensime(object):
         self.is_setup = False
         self.suggests = None
         self.no_teardown = False
+        self.open_definition = False
         #thread.start_new_thread(self.unqueue_poll, ()) #if neovim
     def ensime_bridge(self, action):
         binary = os.environ.get("ENSIME_BRIDGE")
@@ -123,12 +124,19 @@ class Ensime(object):
     def type(self, args, range = None):
         self.log("type: in")
         self.path_start_size("Type")
-    @neovim.command('EnSymbol', range='', nargs='*', sync=True)
-    def symbol(self, args, range = None):
-        self.log("symbol: in")
+    def symbol_at_point_req(self, open_definition):
+        self.open_definition = open_definition
         pos = self.get_position(self.cursor()[0], self.cursor()[1] + 1)
         self.send_request({
             "point": pos, "typehint":"SymbolAtPointReq", "file":self.path()})
+    @neovim.command('EnDeclaration', range='', nargs='*', sync=True)
+    def open_declaration(self, args, range = None):
+        self.log("open_declaration: in")
+        self.symbol_at_point_req(True)
+    @neovim.command('EnSymbol', range='', nargs='*', sync=True)
+    def symbol(self, args, range = None):
+        self.log("symbol: in")
+        self.symbol_at_point_req(True)
     @neovim.command('EnDocUri', range='', nargs='*', sync=True)
     def doc_uri(self, args, range = None):
         self.log("doc_uri: in")
@@ -173,6 +181,9 @@ class Ensime(object):
         typehint = payload["typehint"]
         if typehint == "SymbolInfo":
             self.message(payload["declPos"]["file"])
+            if self.open_definition:
+                self.vim.command(":vsplit {}".format(
+                    payload["declPos"]["file"]))
         elif typehint == "IndexerReadyEvent":
             self.message("ensime indexer ready")
         elif typehint == "AnalyzerReadyEvent":
