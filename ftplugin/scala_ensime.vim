@@ -9,7 +9,113 @@ import base64
 import logging
 import time
 import thread
+import inspect
 from socket import error as socket_error
+from collections import defaultdict
+import signal
+class EnsimeLauncher:
+    def __init__(self, conf_path):
+        self.conf_path = conf_path
+        self.version = "0.9.10-SNAPSHOT"
+        if os.path.exists(self.conf_path):
+            self.conf = self.parse_conf()
+    def parse_conf(self):
+        conf = self.read_file(self.conf_path).replace("\n", "").replace(
+                "(", " ").replace(")", " ").replace('"', "").split(" :")
+        pattern = re.compile("([^ ]*) *(.*)$")
+        conf = [(m[0], m[1])for m in [pattern.match(x).groups() for x in conf]]
+        result = {}
+        for item in conf:
+            result[item[0]] = item[1]
+        return result
+    def get_classpath(self):
+        log = None
+        classpath = None
+        dir = "/tmp/classpath_project_ensime"
+        classpath_file = "{}/classpath".format(dir)
+        if not os.path.exists(classpath_file):
+            if not os.path.exists(dir): os.mkdir(dir)
+            build_sbt = """
+import sbt._
+import IO._
+import java.io._
+scalaVersion := "%(scala_version)"
+ivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) }
+// allows local builds of scala
+resolvers += Resolver.mavenLocal
+resolvers += Resolver.sonatypeRepo("snapshots")
+resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/"
+resolvers += "Akka Repo" at "http://repo.akka.io/repository"
+libraryDependencies ++= Seq(
+  "org.ensime" %% "ensime" % "%(version)",
+  "org.scala-lang" % "scala-compiler" % scalaVersion.value force(),
+  "org.scala-lang" % "scala-reflect" % scalaVersion.value force(),
+  "org.scala-lang" % "scalap" % scalaVersion.value force()
+)
+val saveClasspathTask = TaskKey[Unit]("saveClasspath", "Save the classpath to a file")
+saveClasspathTask := {
+  val managed = (managedClasspath in Runtime).value.map(_.data.getAbsolutePath)
+  val unmanaged = (unmanagedClasspath in Runtime).value.map(_.data.getAbsolutePath)
+  val out = file("%(classpath_file)")
+  write(out, (unmanaged ++ managed).mkString(File.pathSeparator))
+}"""
+            replace = {"scala_version": self.conf['scala-version'], "version": self.version, "classpath_file": classpath_file}
+            for k in replace.keys():
+                build_sbt = build_sbt.replace("%("+k+")", replace[k])
+            project_dir = "{}/project".format(dir)
+            if not os.path.exists(project_dir): os.mkdir(project_dir)
+            self.write_file("{}/build.sbt".format(dir), build_sbt)
+            self.write_file("{}/project/build.properties".format(dir),
+                    "sbt.version=0.13.8")
+            cwd = os.getcwd()
+            os.chdir(dir)
+            log = subprocess.Popen(["sbt", "saveClasspath"], stdout=subprocess.PIPE).communicate()[0]
+            os.chdir(cwd)
+        classpath = self.read_file(classpath_file)
+        return "{}:{}/lib/tools.jar".format(classpath, self.conf['java-home'])
+    def read_file(self, path):
+        f = open(path)
+        result = f.read()
+        f.close()
+        return result
+    def write_file(self, path, contents):
+        f = open(path, "w")
+        result = f.write(contents)
+        f.close()
+        return result
+    def is_running(self):
+        port_path = self.conf_path + "_cache/http"
+        if not os.path.exists(port_path):
+            return False
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect("127.0.0.1", int(self.read_file(port_path))).close()
+        except:
+            return False
+        return True
+    def run(self):
+        if self.conf == None:
+            print("no {} file found".format(self.conf_path))
+        if self.is_running():
+            print("ensime is already running")
+        else:
+            if not os.path.exists(self.conf['cache-dir']):
+                os.mkdir(self.conf['cache-dir'])
+            self.log_file = open(self.conf_path + '_cache/server.log', 'w')
+            args = [a for a in [self.conf['java-home'] + "/bin/java"] +                     self.conf['java-flags'].split(" ") if a != ""] + [
+                            "-cp",  self.get_classpath(),
+                            "-Densime.config=" + self.conf_path,
+                            "org.ensime.server.Server"]
+            self.process = subprocess.Popen(args, stdout=self.log_file,
+                    stderr=subprocess.STDOUT)
+            self.write_file(self.conf_path + "_cache/server.pid",
+                str(self.process.pid))
+        return self
+    def wait(self):
+        self.process.wait()
+    def stop(self):
+        os.kill(self.process.pid, signal.SIGTERM)
+        self.log_file.close()
 class Ensime(object):
     def log(self, what):
         log_dir = "/tmp/"
@@ -41,13 +147,23 @@ class Ensime(object):
         binary = (binary + " " + action)
         self.log("ensime_bridge: lanching " + binary) 
         subprocess.Popen(binary.split())
+    def start_ensime_launcher(self):
+        self.ensime = EnsimeLauncher(".ensime").run()
+    def stop_ensime_launcher(self):
+        self.ensime.stop()
+        f = open(self.ensime_cache + "server.pid")
+        pid = f.read()
+        f.close()
+        self.vim.command("!kill {}".format(pid))
     def teardown(self, filename):
         self.log("teardown: in")
         if not self.no_teardown:
+            self.stop_ensime_launcher()
             self.ensime_bridge("stop")
     def setup(self):
         self.log("setup: in")
         if not self.is_setup:
+            self.start_ensime_launcher()
             self.ensime_bridge("--quiet")
             self.vim.command("set completefunc=EnCompleteFunc")
             self.is_setup = True

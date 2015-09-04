@@ -30,7 +30,6 @@ class EnsimeBridge
             @no_ensime_config = true
             return
         end
-        @ensime = Ensime.new(path)
         @queue = Queue.new
         Dir.mkdir @cache if not File.exists?(@cache)
         @logger = Logger.new(@cache+"bridge.log", 2, 100000)
@@ -43,7 +42,6 @@ class EnsimeBridge
         end
     end
     def stop
-        @ensime.stop
         File.delete @bridge_file if File.exists?  @bridge_file
         exit
     end
@@ -126,8 +124,6 @@ class EnsimeBridge
     end
     def run
         return if @no_ensime_config
-        @ensime.quiet = quiet
-        @ensime.run
         if is_running?
             @logger.info "bridge is already running"
             return
