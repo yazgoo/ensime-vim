@@ -1,6 +1,7 @@
 image: ensime/ensime:latest
 script:
   - apt-get install -yy make g++ gcc openssl libssl-dev ruby ruby-dev python-mock &&
+    pip install websocket-client && 
     gem install bundle &&
     bundle install &&
     bundle exec rake &&

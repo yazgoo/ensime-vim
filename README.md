@@ -12,9 +12,9 @@ ENSIME for the Editor of the Beast (Vim)
 
 # howto
 
-You need ensime\_bridge gem:
+You need websocket-client python module:
 
-    $ sudo gem install ensime_bridge
+    $ sudo pip install websocket-client
 
 You should also export your BROWSER variable, for example in your bashrc:
 
@@ -60,16 +60,6 @@ EnDocBrowse     | launch $BROWSER (env variable) documentation url
 EnTypeCheck     | launch a check on current file (launched on save)            
 EnCompleteFunc  | get an autocompletion menu (via ctrl+X ctrl+U) - blocking    
 
-
-# design
-
-![alt tag](https://raw.github.com/yazgoo/ensime-vim/master/doc/ensime-vim.png)
-
-Since vim does not support asynchronous flows,
-a bridge is used to send and receive messages from ensime,
-keeping a unique connection.
-The vim plugin regularly checks for new events kept by the bridge 
-(currently when the cursor is moved) using multiple connections.
 
 # developer info
 
