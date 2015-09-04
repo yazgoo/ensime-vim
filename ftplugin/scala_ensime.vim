@@ -163,12 +163,12 @@ class Ensime(object):
         self.vim.command("!kill {}".format(pid))
     def teardown(self, filename):
         self.log("teardown: in")
-        if not self.no_teardown:
+        if os.path.exists(".ensime") and not self.no_teardown:
             self.stop_ensime_launcher()
             #self.ensime_bridge("stop")
     def setup(self):
         self.log("setup: in")
-        if not self.is_setup:
+        if os.path.exists(".ensime") and not self.is_setup:
             self.start_ensime_launcher()
             #self.ensime_bridge("--quiet")
             self.vim.command("set completefunc=EnCompleteFunc")
@@ -182,17 +182,6 @@ class Ensime(object):
         port = f.read()
         f.close()
         return port.replace("\n", "")
-    def get_socket(self):
-        self.log("get_socket: in")
-        try:
-            s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
-            port = self.get_cache_port("bridge")
-            s.connect(("::1", int(port)))
-            return s
-        except IOError:
-            return None
-        except socket_error:
-            return None
     def send(self, what):
         self.log("send: in")
         if self.ws != None:

@@ -164,12 +164,12 @@ class Ensime(object):
     @neovim.autocmd('VimLeave', pattern='*.scala', eval='expand("<afile>")', sync=True)
     def teardown(self, filename):
         self.log("teardown: in")
-        if not self.no_teardown:
+        if os.path.exists(".ensime") and not self.no_teardown:
             self.stop_ensime_launcher()
             #self.ensime_bridge("stop")
     def setup(self):
         self.log("setup: in")
-        if not self.is_setup:
+        if os.path.exists(".ensime") and not self.is_setup:
             self.start_ensime_launcher()
             #self.ensime_bridge("--quiet")
             self.vim.command("set completefunc=EnCompleteFunc")
