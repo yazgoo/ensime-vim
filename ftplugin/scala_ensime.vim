@@ -12,7 +12,9 @@ import thread
 import inspect
 from socket import error as socket_error
 from collections import defaultdict
+from websocket import create_connection
 import signal
+import Queue
 class EnsimeLauncher:
     def __init__(self, conf_path):
         self.conf_path = conf_path
@@ -126,7 +128,9 @@ class Ensime(object):
         f.close()
     def unqueue_poll(self):
         while True:
-            self.unqueue(None)
+            if self.ws != None:
+                result = self.ws.recv()
+                self.queue.put(result)
             time.sleep(1)
     def __init__(self, vim):
         self.ensime_cache = ".ensime_cache/"
@@ -140,7 +144,9 @@ class Ensime(object):
         self.suggests = None
         self.no_teardown = False
         self.open_definition = False
-
+        self.ws = None
+        self.queue = Queue.Queue()
+        thread.start_new_thread(self.unqueue_poll, ())
     def ensime_bridge(self, action):
         binary = os.environ.get("ENSIME_BRIDGE")
         if binary == None: binary = "ensime_bridge"
@@ -159,14 +165,17 @@ class Ensime(object):
         self.log("teardown: in")
         if not self.no_teardown:
             self.stop_ensime_launcher()
-            self.ensime_bridge("stop")
+            #self.ensime_bridge("stop")
     def setup(self):
         self.log("setup: in")
         if not self.is_setup:
             self.start_ensime_launcher()
-            self.ensime_bridge("--quiet")
+            #self.ensime_bridge("--quiet")
             self.vim.command("set completefunc=EnCompleteFunc")
             self.is_setup = True
+        if self.ensime_is_ready() and self.ws == None:
+            self.ws = create_connection("ws://127.0.0.1:{}/jerky".format(
+                self.get_cache_port("http")))
     def get_cache_port(self, where):
         self.log("get_cache_port: in")
         f = open(self.ensime_cache + where)
@@ -186,13 +195,9 @@ class Ensime(object):
             return None
     def send(self, what):
         self.log("send: in")
-        s = self.get_socket()
-        if s == None:
-            self.log("send: could not get socket")
-            return
-        self.log("send: {}".format(what))
-        s.send(what + "\n")
-        s.close()
+        if self.ws != None:
+            self.log("send: {}".format(what))
+            self.ws.send(what + "\n")
     def cursor(self):
         self.log("cursor: in")
         return self.vim.current.window.cursor
@@ -236,6 +241,9 @@ class Ensime(object):
     def type(self, args, range = None):
         self.log("type: in")
         self.path_start_size("Type")
+    def ensime_is_ready(self):
+        self.log("ready: in")
+        return os.path.exists(self.ensime_cache + "http")
     def symbol_at_point_req(self, open_definition):
         self.open_definition = open_definition
         pos = self.get_position(self.cursor()[0], self.cursor()[1] + 1)
@@ -318,11 +326,11 @@ class Ensime(object):
     def unqueue(self, filename):
         self.log("unqueue: in")
         self.setup()
-        s = self.get_socket()
-        if s == None: return
-        s.send("unqueue\n")
+        if self.ws == None: return
         while True:
-            result = self.read_line(s)
+            if self.queue.empty():
+                break
+            result = self.queue.get(False)
             self.log("unqueue: result received {}".format(str(result)))
             if result == None or result == "nil":
                 self.log("unqueue: nil or None received")
@@ -331,7 +339,6 @@ class Ensime(object):
             if _json["payload"] != None:
                 self.handle_payload(_json["payload"])
         self.log("unqueue: before close")
-        s.close()
         self.log("unqueue: after close")
     def autocmd_handler(self, filename):
         self._increment_calls()
