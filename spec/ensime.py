@@ -45,8 +45,6 @@ class TestEnsime(unittest.TestCase):
     def test_get_cache_port(self):
         with self.assertRaises(IOError):
             self.ensime.get_cache_port("42")
-    def test_get_socket(self):
-        assert(self.ensime.get_socket() == None)
     def test_path_start_size(self):
         self.vim.command = MagicMock()
         self.ensime.path_start_size("blah")
