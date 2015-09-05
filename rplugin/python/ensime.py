@@ -185,7 +185,9 @@ class Ensime(object):
         return port.replace("\n", "")
     def send(self, what):
         self.log("send: in")
-        if self.ws != None:
+        if self.ws == None:
+            self.message("still initializing")
+        else:
             self.log("send: {}".format(what))
             self.ws.send(what + "\n")
     def cursor(self):
