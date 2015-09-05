@@ -47,8 +47,11 @@ Finally, launch vim with the file(s) you want to edit:
 
     $ vim src/scaloid/example/HelloScaloid.scala
 
-# available commands
+# event handling
 
+For all commands except autocomplete, events are handled when you move your cursor.
+
+# available commands
 
 command         |   description                                                
 ----------------|--------------------------------------------------------------
