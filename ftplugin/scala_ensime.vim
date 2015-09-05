@@ -314,6 +314,10 @@ class Ensime(object):
         for i in self.matches:
             self.vim.eval("matchdelete({})".format(i))
         self.matches = []
+    def on_cursor_hold(self, filename):
+        self.log("on_cursor_hold: in")
+        self.unqueue(filename)
+        self.vim.command('call feedkeys("f\e")')
     def unqueue(self, filename):
         self.log("unqueue: in")
         self.setup()
@@ -379,6 +383,15 @@ endfun
 fun! Entype_check(arg0, arg1)
 python <<EOF
 r = plugin.type_check([vim.eval('a:arg0'), vim.eval('a:arg1')])
+vim.command('let g:__result = ' + json.dumps(([] if r == None else r)))
+EOF
+let res = g:__result
+unlet g:__result
+return res
+endfun
+fun! Enon_cursor_hold(arg0, arg1)
+python <<EOF
+r = plugin.on_cursor_hold([vim.eval('a:arg0'), vim.eval('a:arg1')])
 vim.command('let g:__result = ' + json.dumps(([] if r == None else r)))
 EOF
 let res = g:__result
@@ -461,6 +474,7 @@ augroup Poi
     autocmd!
     autocmd VimLeave * call Enteardown('', '')
     autocmd BufWritePost * call Entype_check('', '')
+    autocmd CursorHold * call Enon_cursor_hold('', '')
     autocmd CursorMoved * call Enunqueue('', '')
 augroup END
 command! -nargs=0 EnNoTeardown call Endo_no_teardown('', '')

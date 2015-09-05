@@ -49,7 +49,8 @@ Finally, launch vim with the file(s) you want to edit:
 
 # event handling
 
-For all commands except autocomplete, events are handled when you move your cursor.
+Under neovim, for all commands except autocomplete, events are only handled when you move your cursor (CursorMoved event).
+Under vim, we use [CursorHold](http://vim.wikia.com/wiki/Timer_to_execute_commands_periodically) event.
 
 # available commands
 
