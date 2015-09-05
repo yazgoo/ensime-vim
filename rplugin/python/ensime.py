@@ -323,6 +323,11 @@ class Ensime(object):
         for i in self.matches:
             self.vim.eval("matchdelete({})".format(i))
         self.matches = []
+    @neovim.autocmd('CursorHold', pattern='*.scala', eval='expand("<afile>")', sync=True)
+    def on_cursor_hold(self, filename):
+        self.log("on_cursor_hold: in")
+        self.unqueue(filename)
+        self.vim.command('call feedkeys("f\e")')
     @neovim.autocmd('CursorMoved', pattern='*.scala', eval='expand("<afile>")', sync=True)
     def unqueue(self, filename):
         self.log("unqueue: in")
