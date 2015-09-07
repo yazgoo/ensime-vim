@@ -70,7 +70,7 @@ saveClasspathTask := {
                     "sbt.version=0.13.8")
             cwd = os.getcwd()
             os.chdir(dir)
-            log = subprocess.Popen(["sbt", "saveClasspath"], stdout=subprocess.PIPE).communicate()[0]
+            subprocess.Popen(["sbt", "saveClasspath"])
             os.chdir(cwd)
         classpath = self.read_file(classpath_file)
         return "{}:{}/lib/tools.jar".format(classpath, self.conf['java-home'])
@@ -154,6 +154,7 @@ class Ensime(object):
         self.log("ensime_bridge: lanching " + binary) 
         subprocess.Popen(binary.split())
     def start_ensime_launcher(self):
+        self.message("launching ensime, generating classpath may take a while the first time...")
         self.ensime = EnsimeLauncher(".ensime").run()
     def stop_ensime_launcher(self):
         self.ensime.stop()
