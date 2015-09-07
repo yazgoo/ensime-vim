@@ -65,6 +65,21 @@ EnTypeCheck     | launch a check on current file (launched on save)
 EnCompleteFunc  | get an autocompletion menu (via ctrl+X ctrl+U) - blocking    
 
 
+# developer howto
+
+vim plugin is generated from neovim plugin.
+You should install neo2vim ruby gem:
+
+    $ gem install neo2vim
+
+Then you should do your modifications to:
+
+    rplugin/python/ensime.py 
+    
+And export them to vim plugin format via:
+
+    $ neo2vim rplugin/python/ensime.py ftplugin/scala_ensime.vim
+
 # developer info
 
 Needs some love. Please get in contact if you would like to help! There was some old work that is no longer compatible with the ENSIME server but it may serve as a good starting place:
