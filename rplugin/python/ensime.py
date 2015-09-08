@@ -16,8 +16,12 @@ import signal
 import Queue
 class EnsimeLauncher:
     def __init__(self, conf_path):
+        self.generating_classpath = False
+        self.classpath = None
         self.conf_path = conf_path
         self.version = "0.9.10-SNAPSHOT"
+        self.classpath_dir = "/tmp/classpath_project_ensime"
+        self.classpath_file = "{}/classpath".format(self.classpath_dir)
         if os.path.exists(self.conf_path):
             self.conf = self.parse_conf()
     def parse_conf(self):
@@ -29,13 +33,12 @@ class EnsimeLauncher:
         for item in conf:
             result[item[0]] = item[1]
         return result
-    def get_classpath(self):
+    def generate_classpath(self):
+        self.generating_classpath = True
         log = None
         classpath = None
-        dir = "/tmp/classpath_project_ensime"
-        classpath_file = "{}/classpath".format(dir)
-        if not os.path.exists(classpath_file):
-            if not os.path.exists(dir): os.mkdir(dir)
+        if not os.path.exists(self.classpath_file):
+            if not os.path.exists(self.classpath_dir): os.mkdir(self.classpath_dir)
             build_sbt = """
 import sbt._
 import IO._
@@ -60,20 +63,21 @@ saveClasspathTask := {
   val out = file("%(classpath_file)")
   write(out, (unmanaged ++ managed).mkString(File.pathSeparator))
 }"""
-            replace = {"scala_version": self.conf['scala-version'], "version": self.version, "classpath_file": classpath_file}
+            replace = {"scala_version": self.conf['scala-version'], "version": self.version, "classpath_file": self.classpath_file}
             for k in replace.keys():
                 build_sbt = build_sbt.replace("%("+k+")", replace[k])
-            project_dir = "{}/project".format(dir)
+            project_dir = "{}/project".format(self.classpath_dir)
             if not os.path.exists(project_dir): os.mkdir(project_dir)
-            self.write_file("{}/build.sbt".format(dir), build_sbt)
-            self.write_file("{}/project/build.properties".format(dir),
+            self.write_file("{}/build.sbt".format(self.classpath_dir), build_sbt)
+            self.write_file("{}/project/build.properties".format(self.classpath_dir),
                     "sbt.version=0.13.8")
             cwd = os.getcwd()
-            os.chdir(dir)
-            subprocess.Popen(["sbt", "saveClasspath"])
+            os.chdir(self.classpath_dir)
+            log_file = open('saveClasspath.log', 'w')
+            self.process = subprocess.Popen(["sbt", "saveClasspath"],
+                    stdout=log_file,
+                    stderr=subprocess.STDOUT)
             os.chdir(cwd)
-        classpath = self.read_file(classpath_file)
-        return "{}:{}/lib/tools.jar".format(classpath, self.conf['java-home'])
     def read_file(self, path):
         f = open(path)
         result = f.read()
@@ -94,17 +98,22 @@ saveClasspathTask := {
         except:
             return False
         return True
+    def setup(self):
+        if self.classpath == None:
+            if not self.generating_classpath:
+                self.generate_classpath()
+            if os.path.exists(self.classpath_file):
+                self.classpath = "{}:{}/lib/tools.jar".format(
+                        self.read_file(self.classpath_file),
+                        self.conf['java-home'])
     def run(self):
-        if self.conf == None:
-            print("no {} file found".format(self.conf_path))
-        if self.is_running():
-            print("ensime is already running")
-        else:
+        if self.conf != None and not self.is_running():
             if not os.path.exists(self.conf['cache-dir']):
                 os.mkdir(self.conf['cache-dir'])
             self.log_file = open(self.conf_path + '_cache/server.log', 'w')
-            args = [a for a in [self.conf['java-home'] + "/bin/java"] +                     self.conf['java-flags'].split(" ") if a != ""] + [
-                            "-cp",  self.get_classpath(),
+            args = [a for a in [self.conf['java-home'] + "/bin/java"] +
+                    self.conf['java-flags'].split(" ") if a != ""] + [
+                            "-cp",  self.classpath,
                             "-Densime.config=" + self.conf_path,
                             "org.ensime.server.Server"]
             self.process = subprocess.Popen(args, stdout=self.log_file,
@@ -142,6 +151,7 @@ class Ensime(object):
         self.vim.command("highlight EnError ctermbg=red")
         self.is_setup = False
         self.suggests = None
+        self.ensime = None
         self.no_teardown = False
         self.open_definition = False
         self.ws = None
@@ -154,8 +164,16 @@ class Ensime(object):
         self.log("ensime_bridge: lanching " + binary) 
         subprocess.Popen(binary.split())
     def start_ensime_launcher(self):
-        self.message("launching ensime, generating classpath may take a while the first time...")
-        self.ensime = EnsimeLauncher(".ensime").run()
+        if self.ensime == None:
+            self.ensime = EnsimeLauncher(".ensime")
+        if self.ensime.classpath != None:
+            self.message("ensime startup")
+            self.ensime.run()
+            return True
+        else:
+            self.message("ensime setup, generating classpath may take a while the first time...")
+            self.ensime.setup()
+        return False
     def stop_ensime_launcher(self):
         self.ensime.stop()
         f = open(self.ensime_cache + "server.pid")
@@ -171,10 +189,9 @@ class Ensime(object):
     def setup(self):
         self.log("setup: in")
         if os.path.exists(".ensime") and not self.is_setup:
-            self.start_ensime_launcher()
-            #self.ensime_bridge("--quiet")
-            self.vim.command("set completefunc=EnCompleteFunc")
-            self.is_setup = True
+            if self.start_ensime_launcher():
+                self.vim.command("set completefunc=EnCompleteFunc")
+                self.is_setup = True
         if self.ensime_is_ready() and self.ws == None:
             self.ws = create_connection("ws://127.0.0.1:{}/jerky".format(
                 self.get_cache_port("http")))
