@@ -16,7 +16,8 @@ from websocket import create_connection
 import signal
 import Queue
 class EnsimeLauncher:
-    def __init__(self, conf_path):
+    def __init__(self, conf_path, vim = None):
+        self.vim = vim
         self.generating_classpath = False
         self.classpath = None
         self.conf_path = conf_path
@@ -74,10 +75,7 @@ saveClasspathTask := {
                     "sbt.version=0.13.8")
             cwd = os.getcwd()
             os.chdir(self.classpath_dir)
-            log_file = open('saveClasspath.log', 'w')
-            self.process = subprocess.Popen(["sbt", "saveClasspath"],
-                    stdout=log_file,
-                    stderr=subprocess.STDOUT)
+            self.vim.command("!sbt -batch saveClasspath")
             os.chdir(cwd)
     def read_file(self, path):
         f = open(path)
@@ -165,7 +163,7 @@ class Ensime(object):
         subprocess.Popen(binary.split())
     def start_ensime_launcher(self):
         if self.ensime == None:
-            self.ensime = EnsimeLauncher(".ensime")
+            self.ensime = EnsimeLauncher(".ensime", self.vim)
         if self.ensime.classpath != None:
             self.message("ensime startup")
             self.ensime.run()
