@@ -8,6 +8,7 @@ import re
 import base64
 import logging
 import time
+import datetime
 import thread
 import inspect
 from socket import error as socket_error
@@ -19,6 +20,8 @@ class EnsimeLauncher:
     def __init__(self, conf_path, vim = None):
         self.vim = vim
         self.generating_classpath = False
+        self.process = None
+        self.log_file = None
         self.classpath = None
         self.conf_path = conf_path
         self.version = "0.9.10-SNAPSHOT"
@@ -73,10 +76,9 @@ saveClasspathTask := {
             self.write_file("{}/build.sbt".format(self.classpath_dir), build_sbt)
             self.write_file("{}/project/build.properties".format(self.classpath_dir),
                     "sbt.version=0.13.8")
-            cwd = os.getcwd()
-            os.chdir(self.classpath_dir)
-            self.vim.command("!sbt -batch saveClasspath")
-            os.chdir(cwd)
+            self.log_file = open('{}/saveClasspath.log'.format(
+                self.classpath_dir), 'w')
+            self.vim.command("!(cd {};sbt -batch saveClasspath)".format(self.classpath_dir))
     def read_file(self, path):
         f = open(path)
         result = f.read()
@@ -106,7 +108,7 @@ saveClasspathTask := {
                         self.read_file(self.classpath_file),
                         self.conf['java-home'])
     def run(self):
-        if self.conf != None and not self.is_running():
+        if self.classpath != None and self.conf != None and not self.is_running():
             if not os.path.exists(self.conf['cache-dir']):
                 os.mkdir(self.conf['cache-dir'])
             self.log_file = open(self.conf_path + '_cache/server.log', 'w')
@@ -123,15 +125,15 @@ saveClasspathTask := {
     def wait(self):
         self.process.wait()
     def stop(self):
-        os.kill(self.process.pid, signal.SIGTERM)
-        self.log_file.close()
+        if self.process != None: os.kill(self.process.pid, signal.SIGTERM)
+        if self.log_file != None: self.log_file.close()
 class Ensime(object):
     def log(self, what):
         log_dir = "/tmp/"
         if os.path.isdir(self.ensime_cache):
             log_dir = self.ensime_cache
         f = open(log_dir + "ensime-vim.log", "a")
-        f.write("{}: {}\n".format(time.strftime("%Y-%m-%d %H:%M:%S"), what))
+        f.write("{}: {}\n".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f"), what))
         f.close()
     def unqueue_poll(self):
         while True:
@@ -165,12 +167,14 @@ class Ensime(object):
         if self.ensime == None:
             self.ensime = EnsimeLauncher(".ensime", self.vim)
         if self.ensime.classpath != None:
+            self.log("starting up ensime")
             self.message("ensime startup")
             self.ensime.run()
             return True
         else:
-            self.message("ensime setup, generating classpath may take a while the first time...")
-            self.ensime.setup()
+           self.log("launching EnsimeLauncher.setup()")
+           self.ensime.setup()
+           self.log("done launching EnsimeLauncher.setup()")
         return False
     def stop_ensime_launcher(self):
         self.ensime.stop()
