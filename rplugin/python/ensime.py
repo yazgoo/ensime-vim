@@ -14,7 +14,6 @@ from collections import defaultdict
 from websocket import create_connection
 import signal
 import Queue
-import pty
 class EnsimeLauncher:
     def __init__(self, conf_path, vim = None):
         self.vim = vim
