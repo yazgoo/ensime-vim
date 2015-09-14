@@ -3,7 +3,7 @@ build:
   pull: true
   commands:
     - apt-get install -yy make g++ gcc openssl libssl-dev ruby ruby-dev python-mock &&
-      pip install websocket-client && 
+      pip install websocket-client ensime_launcher && 
       gem install bundle &&
       bundle install
     - bundle exec rake

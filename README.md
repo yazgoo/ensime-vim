@@ -12,9 +12,13 @@ ENSIME for the Editor of the Beast (Vim)
 
 # howto
 
-You need websocket-client python module:
+You need `websocket-client` python package:
 
     $ sudo pip install websocket-client
+
+You also need `ensime_launcher` package:
+
+    $ sudo pip install ensime_launcher
 
 You should also export your BROWSER variable, for example in your bashrc:
 
