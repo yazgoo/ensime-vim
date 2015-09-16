@@ -24,7 +24,7 @@ You should also export your BROWSER variable, for example in your bashrc:
 
     export BROWSER=firefox
 
-All the following commands should be ran from your scala directory.
+All the following commands should be run from your scala directory.
 
 First you need ensime sbt plugin:    
     
