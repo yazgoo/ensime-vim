@@ -41,7 +41,11 @@ by adding to your .vimrc:
     Plugin 'ensime/ensime-vim'
 
 Or if you're using neovim, with [vim-plug](https://github.com/junegunn/vim-plug)
-by adding to your .nvimrc:
+by installing neovim python module:
+
+    $ pip install neovim
+
+and by adding to your .nvimrc:
 
     Plug 'ensime/ensime-vim'
 
