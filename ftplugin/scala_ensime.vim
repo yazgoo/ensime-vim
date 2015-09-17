@@ -38,7 +38,8 @@ class Ensime(object):
         self.browse = False
         self.vim = vim
         self.matches = []
-        self.vim.command("highlight EnError ctermbg=red")
+        self.vim.command("highlight EnError ctermbg=red gui=underline")
+        self.vim.command("let g:EnErrorStyle='EnError'")
         self.is_setup = False
         self.suggests = None
         self.ensime = None
@@ -193,7 +194,7 @@ class Ensime(object):
             c = note["col"] - 1
             e = note["col"] + (note["end"] - note["beg"])
             self.matches.append(self.vim.eval(
-                "matchadd('EnError', '\\%{}l\\%>{}c\\%<{}c')".format(l, c, e)))
+                "matchadd(g:EnErrorStyle, '\\%{}l\\%>{}c\\%<{}c')".format(l, c, e)))
             self.message(note["msg"])
     def handle_string_response(self, payload):
         url = "http://127.0.0.1:{}/{}".format(self.get_cache_port("http"),

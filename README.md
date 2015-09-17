@@ -72,6 +72,15 @@ EnDocBrowse     | launch $BROWSER (env variable) documentation url
 EnTypeCheck     | launch a check on current file (launched on save)            
 EnCompleteFunc  | get an autocompletion menu (via ctrl+X ctrl+U) - blocking    
 
+# customizing
+
+If you want to use another highlight style for error, use:
+
+    let EnErrorStyle='YourHighlight'
+
+For example:
+
+    let EnErrorStyle='Underlined'
 
 # developer howto
 
