@@ -62,7 +62,7 @@ Under vim, we use [CursorHold](http://vim.wikia.com/wiki/Timer_to_execute_comman
 
 # using ensime-vim
 
-[User documentation](doc/ensime-vim) is available, you can also load it inside vim via:
+[User documentation](doc/ensime-vim.txt) is available, you can also load it inside vim via:
 
     :help ensime-vim
 
