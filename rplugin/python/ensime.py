@@ -9,6 +9,14 @@ import datetime
 import thread
 import inspect
 import Queue
+class Error:
+    def __init__(self, message, l, c, e):
+        self.message = message
+        self.l = l
+        self.c = c
+        self.e = e
+    def includes(self, cursor):
+        return cursor[0] == self.l and self.c <= cursor[1] and cursor[1] < self.e
 @neovim.plugin
 class Ensime(object):
     def module_exists(self, module_name):
@@ -38,6 +46,7 @@ class Ensime(object):
         self.browse = False
         self.vim = vim
         self.matches = []
+        self.errors = []
         self.vim.command("highlight EnError ctermbg=red gui=underline")
         self.vim.command("let g:EnErrorStyle='EnError'")
         self.is_setup = False
@@ -201,6 +210,7 @@ class Ensime(object):
             l = note["line"]
             c = note["col"] - 1
             e = note["col"] + (note["end"] - note["beg"])
+            self.errors.append(Error(note["msg"], l, c, e))
             self.matches.append(self.vim.eval(
                 "matchadd(g:EnErrorStyle, '\\%{}l\\%>{}c\\%<{}c')".format(l, c, e)))
             self.message(note["msg"])
@@ -245,16 +255,29 @@ class Ensime(object):
         for i in self.matches:
             self.vim.eval("matchdelete({})".format(i))
         self.matches = []
+        self.errors = []
     @neovim.autocmd('CursorHold', pattern='*.scala', eval='expand("<afile>")', sync=True)
     def on_cursor_hold(self, filename):
         self.log("on_cursor_hold: in")
         self.unqueue(filename)
         self.vim.command('call feedkeys("f\e")')
     @neovim.autocmd('CursorMoved', pattern='*.scala', eval='expand("<afile>")', sync=True)
-    def unqueue(self, filename):
-        self.log("unqueue: in")
+    def cursor_moved(self, filename):
         self.setup()
         if self.ws == None: return
+        self.display_error_if_necessary(filename)
+        self.unqueue(filename)
+    def get_error_at(self, cursor):
+        for error in self.errors:
+            if error.includes(cursor):
+                return error
+        return None
+    def display_error_if_necessary(self, filename):
+        error = self.get_error_at(self.cursor())
+        if error != None:
+            self.message(error.message)
+    def unqueue(self, filename):
+        self.log("unqueue: in")
         while True:
             if self.queue.empty():
                 break
