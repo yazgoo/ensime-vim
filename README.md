@@ -60,27 +60,11 @@ Finally, launch vim with the file(s) you want to edit:
 Under neovim, for all commands except autocomplete, events are only handled when you move your cursor (CursorMoved event).
 Under vim, we use [CursorHold](http://vim.wikia.com/wiki/Timer_to_execute_commands_periodically) event.
 
-# available commands
+# using ensime-vim
 
-command         |   description                                                
-----------------|--------------------------------------------------------------
-EnType          | displays type under cursor                                   
-EnSymbol        | displays the path where the symbol under cursor was declared 
-EnDeclaration   | vsplit window  where the symbol under cursor was declared    
-EnDocUri        | displays documentation url under cursor                      
-EnDocBrowse     | launch $BROWSER (env variable) documentation url             
-EnTypeCheck     | launch a check on current file (launched on save)            
-EnCompleteFunc  | get an autocompletion menu (via ctrl+X ctrl+U) - blocking    
+[User documentation](doc/ensime-vim.txt) is available, you can also load it inside vim via:
 
-# customizing
-
-If you want to use another highlight style for error, use:
-
-    let EnErrorStyle='YourHighlight'
-
-For example:
-
-    let EnErrorStyle='Underlined'
+    :help ensime-vim
 
 # developer howto
 
