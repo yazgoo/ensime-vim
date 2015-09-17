@@ -1,1 +1,10 @@
-Help
+*ensime-vim.txt*  An ensime wrapper
+
+Author:  Olivier 'yazgoo' Abdesselam
+License: Same terms as Vim itself (see |license|)
+
+This plugin is only available if 'compatible' is not set.
+
+INTRODUCTION                                    *ensime-vim*
+
+An ensime wrapper
