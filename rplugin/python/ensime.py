@@ -8,11 +8,16 @@ import time
 import datetime
 import thread
 import inspect
-from ensime_launcher import EnsimeLauncher
-from websocket import create_connection
 import Queue
 @neovim.plugin
 class Ensime(object):
+    def module_exists(self, module_name):
+        try:
+            __import__(module_name)
+        except ImportError:
+            return False
+        else:
+            return True
     def log(self, what):
         log_dir = "/tmp/"
         if os.path.isdir(self.ensime_cache):
@@ -51,7 +56,12 @@ class Ensime(object):
         subprocess.Popen(binary.split())
     def start_ensime_launcher(self):
         if self.ensime == None:
-            self.ensime = EnsimeLauncher(".ensime", self.vim)
+            if self.module_exists("ensime_launcher"):
+                from ensime_launcher import EnsimeLauncher
+                self.ensime = EnsimeLauncher(".ensime", self.vim)
+            else:
+                self.tell_module_missing("ensime_launcher")
+                return False
         if self.ensime.classpath != None:
             self.log("starting up ensime")
             self.message("ensime startup")
@@ -81,8 +91,14 @@ class Ensime(object):
                 self.vim.command("set completefunc=EnCompleteFunc")
                 self.is_setup = True
         if self.ensime_is_ready() and self.ws == None:
-            self.ws = create_connection("ws://127.0.0.1:{}/jerky".format(
-                self.get_cache_port("http")))
+            if self.module_exists("websocket"):
+                from websocket import create_connection
+                self.ws = create_connection("ws://127.0.0.1:{}/jerky".format(
+                    self.get_cache_port("http")))
+            else:
+                self.tell_module_missing("websocket-client")
+    def tell_module_missing(self, name):
+        self.message("{} missing: do a `pip install {}` and restart vim".format(name, name))
     def get_cache_port(self, where):
         self.log("get_cache_port: in")
         f = open(self.ensime_cache + where)
