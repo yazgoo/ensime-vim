@@ -65,7 +65,6 @@ class Ensime(object):
         self.errors = []
         self.vim.command("highlight EnError ctermbg=red gui=underline")
         self.vim.command("let g:EnErrorStyle='EnError'")
-        self.is_setup = False
         self.suggests = None
         self.ensime = None
         self.no_teardown = False
@@ -81,35 +80,26 @@ class Ensime(object):
         subprocess.Popen(binary.split())
     def start_ensime_launcher(self):
         if self.ensime == None:
-            self.ensime = EnsimeLauncher(".ensime", self.vim)
-        if self.ensime.classpath != None:
             self.log("starting up ensime")
             self.message("ensime startup")
-            self.ensime.run()
+            launcher = EnsimeLauncher()
+            self.ensime = launcher.launch(".ensime")
             return True
         else:
-           self.log("launching EnsimeLauncher.setup()")
-           self.ensime.setup()
-           self.log("done launching EnsimeLauncher.setup()")
-        return False
+            return False
     def stop_ensime_launcher(self):
-        self.ensime.stop()
-        f = open(self.ensime_cache + "server.pid")
-        pid = f.read()
-        f.close()
-        self.vim.command("!kill {}".format(pid))
+        if self.ensime != None:
+            self.ensime.stop()
     @neovim.autocmd('VimLeave', pattern='*.scala', eval='expand("<afile>")', sync=True)
     def teardown(self, filename):
         self.log("teardown: in")
         if os.path.exists(".ensime") and not self.no_teardown:
             self.stop_ensime_launcher()
-            #self.ensime_bridge("stop")
     def setup(self):
         self.log("setup: in")
-        if os.path.exists(".ensime") and not self.is_setup:
+        if os.path.exists(".ensime"):
             if self.start_ensime_launcher():
                 self.vim.command("set completefunc=EnCompleteFunc")
-                self.is_setup = True
         if self.ensime_is_ready() and self.ws == None:
             if self.module_exists("websocket"):
                 from websocket import create_connection
@@ -180,7 +170,7 @@ class Ensime(object):
         self.path_start_size("Type")
     def ensime_is_ready(self):
         self.log("ready: in")
-        return os.path.exists(self.ensime_cache + "http")
+        return self.ensime != None and self.ensime.is_ready()
     def symbol_at_point_req(self, open_definition):
         self.open_definition = open_definition
         pos = self.get_position(self.cursor()[0], self.cursor()[1] + 1)
