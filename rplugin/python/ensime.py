@@ -1,3 +1,18 @@
+import sys
+import os
+import inspect
+
+def EnsimeInitPath():
+    path = os.path.abspath(inspect.getfile(inspect.currentframe()))
+    if path.endswith('/rplugin/python/ensime.py'): # nvim rplugin
+        sys.path.append(os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(path)))))
+    elif path.endswith('/autoload/ensime.vim.py'): # vim plugin
+        sys.path.append(os.path.join(
+            os.path.dirname(os.path.dirname(path))))
+
+EnsimeInitPath()
+
 import neovim
 import json
 import os
@@ -65,12 +80,7 @@ class Ensime(object):
         subprocess.Popen(binary.split())
     def start_ensime_launcher(self):
         if self.ensime == None:
-            if self.module_exists("ensime_launcher"):
-                from ensime_launcher import EnsimeLauncher
-                self.ensime = EnsimeLauncher(".ensime", self.vim)
-            else:
-                self.tell_module_missing("ensime_launcher")
-                return False
+            self.ensime = EnsimeLauncher(".ensime", self.vim)
         if self.ensime.classpath != None:
             self.log("starting up ensime")
             self.message("ensime startup")
