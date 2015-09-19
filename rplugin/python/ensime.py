@@ -13,6 +13,7 @@ def EnsimeInitPath():
 
 EnsimeInitPath()
 
+import ensime_launcher
 import neovim
 import json
 import os
