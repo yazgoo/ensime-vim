@@ -33,8 +33,8 @@ class Error:
         self.e = e
     def includes(self, cursor):
         return cursor[0] == self.l and self.c <= cursor[1] and cursor[1] < self.e
-@neovim.plugin
-class Ensime(object):
+
+class EnsimeClient(object):
     def module_exists(self, module_name):
         try:
             __import__(module_name)
@@ -90,7 +90,7 @@ class Ensime(object):
     def stop_ensime_launcher(self):
         if self.ensime != None:
             self.ensime.stop()
-    @neovim.autocmd('VimLeave', pattern='*.scala', eval='expand("<afile>")', sync=True)
+    # @neovim.autocmd('VimLeave', pattern='*.scala', eval='expand("<afile>")', sync=True)
     def teardown(self, filename):
         self.log("teardown: in")
         if os.path.exists(".ensime") and not self.no_teardown:
@@ -156,15 +156,15 @@ class Ensime(object):
         self.send_request({"typehint" : what + "AtPointReq",
             "file" : path,
             where : {"from": i,"to": i + size}})
-    @neovim.command('EnNoTeardown', range='', nargs='*', sync=True)
+    # @neovim.command('EnNoTeardown', range='', nargs='*', sync=True)
     def do_no_teardown(self, args, range = None):
         self.log("do_no_teardown: in")
         self.no_teardown = True
-    @neovim.command('EnTypeCheck', range='', nargs='*', sync=True)
+    # @neovim.command('EnTypeCheck', range='', nargs='*', sync=True)
     def type_check_cmd(self, args, range = None):
         self.log("type_check_cmd: in")
         self.type_check("")
-    @neovim.command('EnType', range='', nargs='*', sync=True)
+    # @neovim.command('EnType', range='', nargs='*', sync=True)
     def type(self, args, range = None):
         self.log("type: in")
         self.path_start_size("Type")
@@ -176,19 +176,19 @@ class Ensime(object):
         pos = self.get_position(self.cursor()[0], self.cursor()[1] + 1)
         self.send_request({
             "point": pos, "typehint":"SymbolAtPointReq", "file":self.path()})
-    @neovim.command('EnDeclaration', range='', nargs='*', sync=True)
+    # @neovim.command('EnDeclaration', range='', nargs='*', sync=True)
     def open_declaration(self, args, range = None):
         self.log("open_declaration: in")
         self.symbol_at_point_req(True)
-    @neovim.command('EnSymbol', range='', nargs='*', sync=True)
+    # @neovim.command('EnSymbol', range='', nargs='*', sync=True)
     def symbol(self, args, range = None):
         self.log("symbol: in")
         self.symbol_at_point_req(True)
-    @neovim.command('EnDocUri', range='', nargs='*', sync=True)
+    # @neovim.command('EnDocUri', range='', nargs='*', sync=True)
     def doc_uri(self, args, range = None):
         self.log("doc_uri: in")
         self.path_start_size("DocUri", "point")
-    @neovim.command('EnDocBrowse', range='', nargs='*', sync=True)
+    # @neovim.command('EnDocBrowse', range='', nargs='*', sync=True)
     def doc_browse(self, args, range = None) :
         self.log("browse: in")
         self.browse = True
@@ -248,7 +248,7 @@ class Ensime(object):
         self.log("send_request: in")
         self.send(json.dumps({"callId" : self.callId,"req" : request}))
         self.callId += 1
-    @neovim.autocmd('BufWritePost', pattern='*.scala', eval='expand("<afile>")', sync=True)
+    # @neovim.autocmd('BufWritePost', pattern='*.scala', eval='expand("<afile>")', sync=True)
     def type_check(self, filename):
         self.log("type_check: in")
         self.send_request({"typehint": "TypecheckFilesReq",
@@ -257,12 +257,12 @@ class Ensime(object):
             self.vim.eval("matchdelete({})".format(i))
         self.matches = []
         self.errors = []
-    @neovim.autocmd('CursorHold', pattern='*.scala', eval='expand("<afile>")', sync=True)
+    # @neovim.autocmd('CursorHold', pattern='*.scala', eval='expand("<afile>")', sync=True)
     def on_cursor_hold(self, filename):
         self.log("on_cursor_hold: in")
         self.unqueue(filename)
         self.vim.command('call feedkeys("f\e")')
-    @neovim.autocmd('CursorMoved', pattern='*.scala', eval='expand("<afile>")', sync=True)
+    # @neovim.autocmd('CursorMoved', pattern='*.scala', eval='expand("<afile>")', sync=True)
     def cursor_moved(self, filename):
         self.setup()
         if self.ws == None: return
@@ -296,7 +296,7 @@ class Ensime(object):
         self._increment_calls()
         self.vim.current.line = (
             'Autocmd: Called %s times, file: %s' % (self.calls, filename))
-    @neovim.function('EnCompleteFunc', sync=True)
+    # @neovim.function('EnCompleteFunc', sync=True)
     def complete_func(self, args):
         if args[0] == '1':
             self.complete()
@@ -318,3 +318,44 @@ class Ensime(object):
                     result.append(m)
             self.suggests = None
             return result
+
+@neovim.plugin
+class Ensime:
+    @neovim.autocmd('VimLeave', pattern='*.scala', eval='expand("<afile>")', sync=True)
+    def au_vimleave(self, filename):
+        return
+
+    @neovim.command('EnNoTeardown', range='', nargs='*', sync=True)
+    def com_en_no_teardown(self, args, range = None):
+        return
+    @neovim.command('EnTypeCheck', range='', nargs='*', sync=True)
+    def com_en_type_check(self, args, range = None):
+        return
+    @neovim.command('EnType', range='', nargs='*', sync=True)
+    def com_en_type(self, args, range = None):
+        return
+    @neovim.command('EnDeclaration', range='', nargs='*', sync=True)
+    def com_en_declaration(self, args, range = None):
+        return
+    @neovim.command('EnSymbol', range='', nargs='*', sync=True)
+    def com_en_symbol(self, args, range = None):
+        return
+    @neovim.command('EnDocUri', range='', nargs='*', sync=True)
+    def com_en_doc_uri(self, args, range = None):
+        return
+    @neovim.command('EnDocBrowse', range='', nargs='*', sync=True)
+    def com_en_doc_browse(self, args, range = None):
+        return
+
+    @neovim.autocmd('BufWritePost', pattern='*.scala', eval='expand("<afile>")', sync=True)
+    def au_buf_write_post(self, filename):
+        return
+    @neovim.autocmd('CursorHold', pattern='*.scala', eval='expand("<afile>")', sync=True)
+    def au_cursor_hold(self, filename):
+        return
+    @neovim.autocmd('CursorMoved', pattern='*.scala', eval='expand("<afile>")', sync=True)
+    def au_cursor_moved(self, filename):
+        return
+    @neovim.function('EnCompleteFunc', sync=True)
+    def fun_en_complete_func(self, args):
+        return
