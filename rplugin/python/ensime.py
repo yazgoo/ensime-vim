@@ -351,7 +351,7 @@ class Ensime:
         if abs_path in self.clients:
             return self.clients[abs_path]
         elif create:
-            client = EnsimeClient(vim, config_path)
+            client = EnsimeClient(self.vim, config_path)
             self.clients[abs_path] = client
             self.__message("Starting up ensime server...")
             client.setup()
