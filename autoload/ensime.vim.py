@@ -55,8 +55,9 @@ class EnsimeClient(object):
                 result = self.ws.recv()
                 self.queue.put(result)
             time.sleep(1)
-    def __init__(self, vim):
-        self.ensime_cache = ".ensime_cache/"
+    def __init__(self, vim, config_path):
+        self.config_path = os.path.abspath(config_path)
+        self.ensime_cache = os.path.join(os.path.dirname(self.config_path), ".ensime_cache")
         self.log("__init__: in")
         self.callId = 0
         self.browse = False
@@ -72,18 +73,12 @@ class EnsimeClient(object):
         self.ws = None
         self.queue = Queue.Queue()
         thread.start_new_thread(self.unqueue_poll, ())
-    def ensime_bridge(self, action):
-        binary = os.environ.get("ENSIME_BRIDGE")
-        if binary == None: binary = "ensime_bridge"
-        binary = (binary + " " + action)
-        self.log("ensime_bridge: lanching " + binary) 
-        subprocess.Popen(binary.split())
     def start_ensime_launcher(self):
         if self.ensime == None:
             self.log("starting up ensime")
             self.message("ensime startup")
-            launcher = EnsimeLauncher()
-            self.ensime = launcher.launch(".ensime")
+            launcher = ensime_launcher.EnsimeLauncher()
+            self.ensime = launcher.launch(self.config_path)
             return True
         else:
             return False
@@ -93,28 +88,22 @@ class EnsimeClient(object):
     # @neovim.autocmd('VimLeave', pattern='*.scala', eval='expand("<afile>")', sync=True)
     def teardown(self, filename):
         self.log("teardown: in")
-        if os.path.exists(".ensime") and not self.no_teardown:
+        if os.path.exists(self.config_path) and not self.no_teardown:
             self.stop_ensime_launcher()
     def setup(self):
         self.log("setup: in")
-        if os.path.exists(".ensime"):
+        if os.path.exists(self.config_path):
             if self.start_ensime_launcher():
                 self.vim.command("set completefunc=EnCompleteFunc")
-        if self.ensime_is_ready() and self.ws == None:
+        if self.ensime != None and self.ensime.is_ready() and self.ws == None:
             if self.module_exists("websocket"):
                 from websocket import create_connection
                 self.ws = create_connection("ws://127.0.0.1:{}/jerky".format(
-                    self.get_cache_port("http")))
+                    self.ensime.http_port()))
             else:
                 self.tell_module_missing("websocket-client")
     def tell_module_missing(self, name):
         self.message("{} missing: do a `pip install {}` and restart vim".format(name, name))
-    def get_cache_port(self, where):
-        self.log("get_cache_port: in")
-        f = open(self.ensime_cache + where)
-        port = f.read()
-        f.close()
-        return port.replace("\n", "")
     def send(self, what):
         self.log("send: in")
         if self.ws == None:
@@ -168,9 +157,6 @@ class EnsimeClient(object):
     def type(self, args, range = None):
         self.log("type: in")
         self.path_start_size("Type")
-    def ensime_is_ready(self):
-        self.log("ready: in")
-        return self.ensime != None and self.ensime.is_ready()
     def symbol_at_point_req(self, open_definition):
         self.open_definition = open_definition
         pos = self.get_position(self.cursor()[0], self.cursor()[1] + 1)
@@ -205,6 +191,7 @@ class EnsimeClient(object):
         return ret
     def message(self, m):
         self.log("message: in")
+        self.log(m)
         self.vim.command("echo '{}'".format(m))
     def handle_new_scala_notes_event(self, notes):
         for note in notes:
@@ -320,30 +307,96 @@ class EnsimeClient(object):
             return result
 
 class Ensime:
-    def au_vimleave(self, filename):
-        return
+    def __init__(self, vim):
+        self.vim = vim
+        self.clients = {} # .ensime path => ensime server process
+
+    def __message(self, m):
+        # TODO: escape m
+        self.vim.command("echo '{}'".format(m))
+
+    def teardown(self):
+        for c in self.clients.values():
+            c.teardown(None)
+
+    def is_scala_file(self):
+        return self.vim.eval('&filetype') == 'scala'
+
+    def current_client(self):
+        config_path = self.find_config_path(vim.eval("expand('%:p')"))
+        if config_path == None:
+            return None
+        else:
+            return self.client_for(config_path)
+
+    def client_for(self, config_path):
+        abs_path = os.path.abspath(config_path)
+        if abs_path in self.clients:
+            return self.clients[abs_path]
+        else:
+            client = EnsimeClient(vim, config_path)
+            self.clients[abs_path] = client
+            self.__message("Starting up ensime server...")
+            client.setup()
+            return client
+
+    def find_config_path(self, path):
+        abs_path = os.path.abspath(path)
+        config_path = os.path.join(abs_path, '.ensime')
+
+        if abs_path == os.path.abspath('/'):
+            return None
+        elif os.path.isfile(config_path):
+            return config_path
+        else:
+            return self.find_config_path(os.path.dirname(abs_path))
+
+    def with_current_client(self, proc):
+        c = self.current_client()
+        if c == None:
+            self.__message("Ensime config not found for this project")
+        else:
+            return proc(c)
 
     def com_en_no_teardown(self, args, range = None):
-        return
+        self.with_current_client(lambda c: c.do_no_teardown(None, None))
+
     def com_en_type_check(self, args, range = None):
-        return
+        self.with_current_client(lambda c: c.type_check_cmd(None))
+
     def com_en_type(self, args, range = None):
-        return
+        self.with_current_client(lambda c: c.type(None))
+
     def com_en_declaration(self, args, range = None):
-        return
+        self.with_current_client(lambda c: c.open_declaration(args, range))
+
     def com_en_symbol(self, args, range = None):
-        return
+        self.with_current_client(lambda c: c.symbol(args, range))
+
     def com_en_doc_uri(self, args, range = None):
-        return
+        self.with_current_client(lambda c: c.doc_uri(args, range))
+
     def com_en_doc_browse(self, args, range = None):
-        return
+        self.with_current_client(lambda c: c.doc_browse(args, range))
+
+    def au_vimleave(self, filename):
+        self.teardown()
 
     def au_buf_write_post(self, filename):
-        return
+        if self.is_scala_file():
+            self.with_current_client(lambda c: c.type_check(filename))
+
     def au_cursor_hold(self, filename):
-        return
+        if self.is_scala_file():
+            self.with_current_client(lambda c: c.on_cursor_hold(filename))
+
     def au_cursor_moved(self, filename):
-        return
+        if self.is_scala_file():
+            self.with_current_client(lambda c: c.cursor_moved(filename))
+
     def fun_en_complete_func(self, args):
-        return
+        if self.is_scala_file():
+            return self.with_current_client(lambda c: c.complete_func(args))
+        else:
+            return []
 ensime_plugin = Ensime(vim)
