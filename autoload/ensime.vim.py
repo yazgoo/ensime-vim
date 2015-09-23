@@ -55,9 +55,10 @@ class EnsimeClient(object):
                 result = self.ws.recv()
                 self.queue.put(result)
             time.sleep(1)
-    def __init__(self, vim, config_path):
+    def __init__(self, vim, launcher, config_path):
         self.config_path = os.path.abspath(config_path)
         self.ensime_cache = os.path.join(os.path.dirname(self.config_path), ".ensime_cache")
+        self.launcher = launcher
         self.log("__init__: in")
         self.callId = 0
         self.browse = False
@@ -77,8 +78,7 @@ class EnsimeClient(object):
         if self.ensime == None:
             self.log("starting up ensime")
             self.message("ensime startup")
-            launcher = ensime_launcher.EnsimeLauncher()
-            self.ensime = launcher.launch(self.config_path)
+            self.ensime = self.launcher.launch(self.config_path)
             return True
         else:
             return False
@@ -310,6 +310,7 @@ class Ensime:
     def __init__(self, vim):
         self.vim = vim
         self.clients = {} # .ensime path => ensime server process
+        self.launcher = ensime_launcher.EnsimeLauncher()
 
     def __message(self, m):
         # TODO: escape m
@@ -350,7 +351,7 @@ class Ensime:
         if abs_path in self.clients:
             return self.clients[abs_path]
         elif create:
-            client = EnsimeClient(self.vim, config_path)
+            client = EnsimeClient(self.vim, self.launcher, config_path)
             self.clients[abs_path] = client
             self.__message("Starting up ensime server...")
             client.setup()
