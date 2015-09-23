@@ -315,6 +315,22 @@ class Ensime:
         # TODO: escape m
         self.vim.command("echo '{}'".format(m))
 
+    def client_keys(self):
+        return self.clients.keys()
+
+    def client_status(self, config_path):
+        c = self.client_for(config_path)
+        if c == None or c.ensime == None:
+            return 'unloaded'
+        elif c.ensime.is_ready():
+            return 'ready'
+        elif c.ensime.is_running():
+            return 'startup'
+        elif c.ensime.aborted():
+            return 'aborted'
+        else:
+            return 'stopped'
+
     def teardown(self):
         for c in self.clients.values():
             c.teardown(None)
@@ -329,16 +345,18 @@ class Ensime:
         else:
             return self.client_for(config_path)
 
-    def client_for(self, config_path):
+    def client_for(self, config_path, create = True):
         abs_path = os.path.abspath(config_path)
         if abs_path in self.clients:
             return self.clients[abs_path]
-        else:
+        elif create:
             client = EnsimeClient(vim, config_path)
             self.clients[abs_path] = client
             self.__message("Starting up ensime server...")
             client.setup()
             return client
+        else:
+            return None
 
     def find_config_path(self, path):
         abs_path = os.path.abspath(path)
@@ -378,6 +396,10 @@ class Ensime:
 
     def com_en_doc_browse(self, args, range = None):
         self.with_current_client(lambda c: c.doc_browse(args, range))
+
+    def com_en_clients(self, args, range = None):
+        for path in self.client_keys():
+            self.__message("{}: {}".format(path, self.client_status(path)))
 
     def au_vimleave(self, filename):
         self.teardown()

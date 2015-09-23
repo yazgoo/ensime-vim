@@ -16,6 +16,7 @@ command! -nargs=0 EnDeclaration call ensime#com_en_declaration('', '')
 command! -nargs=0 EnSymbol call ensime#com_en_symbol('', '')
 command! -nargs=0 EnDocUri call ensime#com_en_doc_uri('', '')
 command! -nargs=0 EnDocBrowse call ensime#com_en_doc_browse('', '')
+command! -nargs=0 EnClients call ensime#com_en_clients('', '')
 
 function! EnCompleteFunc(args) abort
     return ensime#fun_en_complete_func(a:args)

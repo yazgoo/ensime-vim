@@ -2,6 +2,14 @@ if !has('nvim')
     execute 'pyfile' expand('<sfile>:p').'.py'
 endif
 
+function! ensime#client_keys() abort
+    return s:call_plugin('client_keys', [])
+endfunction
+
+function! ensime#client_status(config_path) abort
+    return s:call_plugin('client_status', [a:config_path])
+endfunction
+
 function! ensime#teardown() abort
     return s:call_plugin('teardown', [])
 endfunction
@@ -14,8 +22,8 @@ function! ensime#current_client() abort
     return s:call_plugin('current_client', [])
 endfunction
 
-function! ensime#client_for(config_path) abort
-    return s:call_plugin('client_for', [a:config_path])
+function! ensime#client_for(config_path, create) abort
+    return s:call_plugin('client_for', [a:config_path, a:create])
 endfunction
 
 function! ensime#find_config_path(path) abort
@@ -72,6 +80,10 @@ endfunction
 
 function! ensime#com_en_doc_browse(args, range) abort
     return s:call_plugin('com_en_doc_browse', [a:args, a:range])
+endfunction
+
+function! ensime#com_en_clients(args, range) abort
+    return s:call_plugin('com_en_clients', [a:args, a:range])
 endfunction
 
 function! s:call_plugin(method_name, args) abort
