@@ -74,28 +74,18 @@ class EnsimeClient(object):
         self.ws = None
         self.queue = Queue.Queue()
         thread.start_new_thread(self.unqueue_poll, ())
-    def start_ensime_launcher(self):
+    def teardown(self, filename):
+        self.log("teardown: in")
+        if self.ensime != None and not self.no_teardown:
+            self.ensime.stop()
+    def setup(self):
+        self.log("setup: in")
         if self.ensime == None:
             self.log("starting up ensime")
             self.message("ensime startup")
             self.ensime = self.launcher.launch(self.config_path)
-            return True
-        else:
-            return False
-    def stop_ensime_launcher(self):
-        if self.ensime != None:
-            self.ensime.stop()
-    # @neovim.autocmd('VimLeave', pattern='*.scala', eval='expand("<afile>")', sync=True)
-    def teardown(self, filename):
-        self.log("teardown: in")
-        if os.path.exists(self.config_path) and not self.no_teardown:
-            self.stop_ensime_launcher()
-    def setup(self):
-        self.log("setup: in")
-        if os.path.exists(self.config_path):
-            if self.start_ensime_launcher():
-                self.vim.command("set completefunc=EnCompleteFunc")
-        if self.ensime != None and self.ensime.is_ready() and self.ws == None:
+            self.vim.command("set completefunc=EnCompleteFunc")
+        if self.ws == None and self.ensime.is_ready():
             if self.module_exists("websocket"):
                 from websocket import create_connection
                 self.ws = create_connection("ws://127.0.0.1:{}/jerky".format(
