@@ -14,10 +14,6 @@ function! ensime#teardown() abort
     return s:call_plugin('teardown', [])
 endfunction
 
-function! ensime#is_scala_file() abort
-    return s:call_plugin('is_scala_file', [])
-endfunction
-
 function! ensime#current_client() abort
     return s:call_plugin('current_client', [])
 endfunction

@@ -326,11 +326,8 @@ class Ensime:
         for c in self.clients.values():
             c.teardown(None)
 
-    def is_scala_file(self):
-        return self.vim.eval('&filetype') == 'scala'
-
     def current_client(self):
-        config_path = self.find_config_path(vim.eval("expand('%:p')"))
+        config_path = self.find_config_path(self.vim.eval("expand('%:p')"))
         if config_path == None:
             return None
         else:
@@ -396,16 +393,13 @@ class Ensime:
         self.teardown()
 
     def au_buf_write_post(self, filename):
-        if self.is_scala_file():
-            self.with_current_client(lambda c: c.type_check(filename))
+        self.with_current_client(lambda c: c.type_check(filename))
 
     def au_cursor_hold(self, filename):
-        if self.is_scala_file():
-            self.with_current_client(lambda c: c.on_cursor_hold(filename))
+        self.with_current_client(lambda c: c.on_cursor_hold(filename))
 
     def au_cursor_moved(self, filename):
-        if self.is_scala_file():
-            self.with_current_client(lambda c: c.cursor_moved(filename))
+        self.with_current_client(lambda c: c.cursor_moved(filename))
 
     def fun_en_complete_func(self, args):
         if self.is_scala_file():
