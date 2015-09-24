@@ -77,6 +77,8 @@ And export them to vim plugin format via:
 
     $ neo2vim rplugin/python/ensime.py ftplugin/scala_ensime.vim
 
+All merges should be done on dev branch before being merged onto master
+
 # developer info
 
 Needs some love. Please get in contact if you would like to help! There was some old work that is no longer compatible with the ENSIME server but it may serve as a good starting place:
