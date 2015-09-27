@@ -2,6 +2,6 @@ build:
   image: ensime/ensime:latest
   pull: true
   commands:
-    - pip install websocket-client ensime_launcher
+    - pip install ensime_launcher
     - bundle exec rake
     - python spec/ensime.py
