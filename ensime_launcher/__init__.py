@@ -116,18 +116,8 @@ class EnsimeLauncher:
         log_file = os.path.join(project_dir, "build.log")
         log = open(log_file, 'w')
         null = open("/dev/null", "r")
-        process = subprocess.Popen(
-                ["sbt", "-batch", "saveClasspath"],
-                stdin = null,
-                stdout = log,
-                stderr = subprocess.STDOUT,
-                cwd = project_dir)
-        ret = process.wait()
-        log.close()
-        null.close()
-        if ret != 0:
-            raise Exception(
-                    "classpath project build failed: exit code = {}. See {} for more information".format(ret, log_file))
+        # see https://github.com/ensime/ensime-vim/issues/29
+        self.vim.command("!(cd {};sbt -batch saveClasspath)".format(self.project_dir))
 
     def build_sbt(self, scala_version, classpath_file):
         src = """
