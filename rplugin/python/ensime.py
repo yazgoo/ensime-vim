@@ -192,6 +192,12 @@ class EnsimeClient(object):
             self.matches.append(self.vim.eval(
                 "matchadd(g:EnErrorStyle, '\\%{}l\\%>{}c\\%<{}c')".format(l, c, e)))
             self.message(note["msg"])
+    def get_cache_port(self, where):
+        self.log("get_cache_port: in")
+        f = open(self.ensime_cache + where)
+        port = f.read()
+        f.close()
+        return port.replace("\n", "")
     def handle_string_response(self, payload):
         url = "http://127.0.0.1:{}/{}".format(self.get_cache_port("http"),
                 payload["text"])
