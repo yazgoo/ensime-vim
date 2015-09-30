@@ -193,8 +193,7 @@ class EnsimeClient(object):
                 "matchadd(g:EnErrorStyle, '\\%{}l\\%>{}c\\%<{}c')".format(l, c, e)))
             self.message(note["msg"])
     def get_cache_port(self, where):
-        self.log("get_cache_port: in")
-        f = open(self.ensime_cache + where)
+        f = open(self.ensime_cache + "/" + where)
         port = f.read()
         f.close()
         return port.replace("\n", "")
