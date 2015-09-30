@@ -214,6 +214,7 @@ class EnsimeClient(object):
             if self.open_definition:
                 self.vim.command(":vsplit {}".format(
                     payload["declPos"]["file"]))
+                self.vim.command("filetype detect")
         elif typehint == "IndexerReadyEvent":
             self.message("ensime indexer ready")
         elif typehint == "AnalyzerReadyEvent":
