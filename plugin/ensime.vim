@@ -18,6 +18,6 @@ command! -nargs=* -range EnDocUri call ensime#com_en_doc_uri([<f-args>], '')
 command! -nargs=* -range EnDocBrowse call ensime#com_en_doc_browse([<f-args>], '')
 command! -nargs=0 -range EnClients call ensime#com_en_clients([<f-args>], '')
 
-function! EnCompleteFunc(...) abort
-    return ensime#fun_en_complete_func(a:000)
+function! EnCompleteFunc(findstart, base) abort
+    return ensime#fun_en_complete_func([a:findstart, a:base])
 endfunction

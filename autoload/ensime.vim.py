@@ -407,6 +407,9 @@ class Ensime:
     def au_cursor_moved(self, filename):
         self.with_current_client(lambda c: c.cursor_moved(filename))
 
+    def is_scala_file(self):
+        return self.vim.eval('&filetype') == 'scala'
+
     def fun_en_complete_func(self, args):
         (findstart, base) = args
         return self.with_current_client(lambda c: c.complete_func(findstart, base))
