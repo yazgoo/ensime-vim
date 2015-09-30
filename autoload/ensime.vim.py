@@ -210,11 +210,14 @@ class EnsimeClient(object):
         self.log("handle_payload: in")
         typehint = payload["typehint"]
         if typehint == "SymbolInfo":
-            self.message(payload["declPos"]["file"])
-            if self.open_definition:
-                self.vim.command(":vsplit {}".format(
-                    payload["declPos"]["file"]))
-                self.vim.command("filetype detect")
+            try:
+                self.message(payload["declPos"]["file"])
+                if self.open_definition:
+                    self.vim.command(":vsplit {}".format(
+                        payload["declPos"]["file"]))
+                    self.vim.command("filetype detect")
+            except KeyError:
+                self.message("symbol not found")
         elif typehint == "IndexerReadyEvent":
             self.message("ensime indexer ready")
         elif typehint == "AnalyzerReadyEvent":
