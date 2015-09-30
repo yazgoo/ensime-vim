@@ -300,7 +300,7 @@ class Ensime:
     def __init__(self, vim):
         self.vim = vim
         self.clients = {} # .ensime path => ensime server process
-        self.launcher = ensime_launcher.EnsimeLauncher()
+        self.launcher = ensime_launcher.EnsimeLauncher(vim)
 
     def __message(self, m):
         # TODO: escape m
