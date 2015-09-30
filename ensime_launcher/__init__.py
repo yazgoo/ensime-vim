@@ -117,8 +117,8 @@ class EnsimeLauncher:
         log_file = os.path.join(project_dir, "build.log")
         log = open(log_file, 'w')
         null = open("/dev/null", "r")
-        # see https://github.com/ensime/ensime-vim/issues/29
-        self.vim.command("!(cd {};sbt -batch saveClasspath)".format(self.project_dir))
+        # see https://github.com/ensime/ensime-vim/issues/29 on why we use this method
+        self.vim.command("!(cd {};sbt -batch saveClasspath)".format(project_dir))
 
     def build_sbt(self, scala_version, classpath_file):
         src = """
