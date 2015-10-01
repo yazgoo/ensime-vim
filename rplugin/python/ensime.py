@@ -159,7 +159,7 @@ class EnsimeClient(object):
     # @neovim.command('EnSymbol', range='', nargs='*', sync=True)
     def symbol(self, args, range = None):
         self.log("symbol: in")
-        self.symbol_at_point_req(True)
+        self.symbol_at_point_req(False)
     # @neovim.command('EnDocUri', range='', nargs='*', sync=True)
     def doc_uri(self, args, range = None):
         self.log("doc_uri: in")
