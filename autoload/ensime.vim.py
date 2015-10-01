@@ -99,8 +99,16 @@ class EnsimeClient(object):
         if self.ws == None:
             self.message("still initializing")
         else:
-            self.log("send: {}".format(what))
-            self.ws.send(what + "\n")
+            try:
+                self.log("send: {}".format(what))
+                self.ws.send(what + "\n")
+            except Exception as e:
+                self.log("send error: {}, reconnecting...".format(e))
+                from websocket import create_connection
+                self.ws = create_connection("ws://127.0.0.1:{}/jerky".format(
+                    self.ensime.http_port()))
+                self.ws.send(what + "\n")
+
     def cursor(self):
         self.log("cursor: in")
         return self.vim.current.window.cursor
