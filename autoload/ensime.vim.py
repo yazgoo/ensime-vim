@@ -84,7 +84,7 @@ class EnsimeClient(object):
             self.log("starting up ensime")
             self.message("ensime startup")
             self.ensime = self.launcher.launch(self.config_path)
-            self.vim.command("set completefunc=EnCompleteFunc")
+            self.vim.command("set omnifunc=EnCompleteFunc")
         if self.ws == None and self.ensime.is_ready():
             if self.module_exists("websocket"):
                 from websocket import create_connection
