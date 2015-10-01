@@ -279,11 +279,11 @@ class EnsimeClient(object):
         self.vim.current.line = (
             'Autocmd: Called %s times, file: %s' % (self.calls, filename))
     # @neovim.function('EnCompleteFunc', sync=True)
-    def complete_func(self, args):
-        if args[0] == '1':
+    def complete_func(self, findstart, base):
+        if findstart == '1':
             self.complete()
             line = self.vim.eval("getline('.')")
-            start = self.cursor()[1] - 1
+            start = self.cursor()[1]
             pattern = re.compile('\a')
             while start > 0 and pattern.match(line[start - 1]):
                 start -= 1
@@ -294,7 +294,7 @@ class EnsimeClient(object):
                     break
                 self.unqueue("")
             result = []
-            pattern = re.compile('^' + args[1])
+            pattern = re.compile('^' + base)
             for m in self.suggests:
                 if pattern.match(m):
                     result.append(m)
@@ -421,7 +421,5 @@ class Ensime:
 
     @neovim.function('EnCompleteFunc', sync=True)
     def fun_en_complete_func(self, args):
-        if self.is_scala_file():
-            return self.with_current_client(lambda c: c.complete_func(args))
-        else:
-            return []
+        (findstart, base) = args
+        return self.with_current_client(lambda c: c.complete_func(findstart, base))
