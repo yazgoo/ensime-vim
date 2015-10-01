@@ -374,6 +374,9 @@ class Ensime:
         else:
             return proc(c)
 
+    def is_scala_file(self):
+        return self.vim.eval('&filetype') == 'scala'
+
     def com_en_no_teardown(self, args, range = None):
         self.with_current_client(lambda c: c.do_no_teardown(None, None))
 
@@ -411,10 +414,9 @@ class Ensime:
     def au_cursor_moved(self, filename):
         self.with_current_client(lambda c: c.cursor_moved(filename))
 
-    def is_scala_file(self):
-        return self.vim.eval('&filetype') == 'scala'
-
-    def fun_en_complete_func(self, args):
-        (findstart, base) = args
-        return self.with_current_client(lambda c: c.complete_func(findstart, base))
+    def fun_en_complete_func(self, findstart, base):
+        if self.is_scala_file():
+            return self.with_current_client(lambda c: c.complete_func(findstart, base))
+        else:
+            return []
 ensime_plugin = Ensime(vim)
