@@ -116,11 +116,15 @@ class EnsimeClient(object):
         s = e - b
         self.send_at_point(what, self.path(), self.cursor()[0], b + 1, s, where)
     def get_position(self, row, col):
-        return int(self.vim.eval('line2byte(%d)+col(%d)' % (row, col)))
+        result = col -1
+        f = open(self.path())
+        result += sum([len(f.readline()) for i in range(row - 1)])
+        f.close()
+        return result
     def complete(self):
         self.log("complete: in")
         content = self.vim.eval('join(getline(1, "$"), "\n")')
-        pos = self.get_position(self.cursor()[0], self.cursor()[1])
+        pos = self.get_position(self.cursor()[0], self.cursor()[1] + 1)
         self.send_request({"point": pos, "maxResults":100,
             "typehint":"CompletionsReq",
             "caseSens":True,
