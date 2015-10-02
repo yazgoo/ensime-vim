@@ -283,11 +283,12 @@ class EnsimeClient(object):
         if findstart == '1':
             self.complete()
             line = self.vim.eval("getline('.')")
-            start = self.cursor()[1]
-            pattern = re.compile('\a')
+            col = self.cursor()[1]
+            start = col
+            pattern = re.compile(r'\b')
             while start > 0 and pattern.match(line[start - 1]):
                 start -= 1
-            return start
+            return min(start, col)
         else:
             while True:
                 if self.suggests != None:
