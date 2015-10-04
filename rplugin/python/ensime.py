@@ -182,7 +182,7 @@ class EnsimeClient(object):
     def message(self, m):
         self.log("message: in")
         self.log(m)
-        self.vim.command("echo '{}'".format(m))
+        self.vim.command("echo \"{}\"".format(m.replace('"', '\\"')))
     def handle_new_scala_notes_event(self, notes):
         for note in notes:
             l = note["line"]
