@@ -71,6 +71,12 @@ class TestEnsime(unittest.TestCase):
         except:
             stop_exception = True
         assert(stop_exception)
+    def test_ensime_launcher(self):
+        launcher = ensime_launcher.EnsimeLauncher(TestVim())
+        conf_path = "/tmp/myconf"
+        ensime_launcher.Util.write_file(conf_path, "blah 42")
+        conf = launcher.parse_conf(conf_path)
+        assert(conf['blah'] == '42')
 #    def test_init(self):
 #        self.vim.command.assert_called_once_with("highlight EnError ctermbg=red")
 #    def test_get_cache_port(self):
