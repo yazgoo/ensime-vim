@@ -55,6 +55,22 @@ class TestEnsime(unittest.TestCase):
         assert(os.path.exists(test_file))
         os.remove(test_file)
         os.rmdir(path)
+    def test_ensime_process(self):
+        class FakeProcess:
+          def __init__(self):
+            self.pid = 1
+          def poll(self):
+            None
+        process = ensime_launcher.EnsimeProcess("/tmp/", FakeProcess(), "/tmp/log", None)
+        assert(process.is_running())
+        assert(not process.is_ready())
+        assert(not process.aborted())
+        stop_exception = False
+        try:
+            process.stop()
+        except:
+            stop_exception = True
+        assert(stop_exception)
 #    def test_init(self):
 #        self.vim.command.assert_called_once_with("highlight EnError ctermbg=red")
 #    def test_get_cache_port(self):
