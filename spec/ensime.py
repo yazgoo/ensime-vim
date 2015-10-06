@@ -101,6 +101,22 @@ class TestEnsime(unittest.TestCase):
         assert(client.path_start_size("/tmp") == None)
         assert(client.unqueue("/tmp") == None)
         client.setup()
+        assert(client.complete() == None)
+        notes = [{"line":0, "col":0, "beg":0, "end":1, "msg":"msg"}]
+        client.handle_new_scala_notes_event(notes)
+        client.handle_payload({"typehint":"NewScalaNotesEvent", "notes":notes})
+        assert(client.get_cache_port("http") == "42")
+        class FakeSocket:
+            def __init__(self):
+                self.first = True
+            def recv(self, n):
+                if self.first:
+                    self.first = False
+                    return 'n'
+                else:
+                    return ''
+                
+        client.read_line(FakeSocket())
 
 #    def test_init(self):
 #        self.vim.command.assert_called_once_with("highlight EnError ctermbg=red")
