@@ -92,6 +92,7 @@ class TestEnsime(unittest.TestCase):
         error = Error("message", 1, 2, 4)
         assert(error.includes([1, 3]))
     def test_ensime_client(self):
+        self.test_ensime_launcher()
         from ensime import EnsimeClient
         launcher = ensime_launcher.EnsimeLauncher(TestVim())
         client = EnsimeClient(TestVim(), launcher, "spec/conf")
