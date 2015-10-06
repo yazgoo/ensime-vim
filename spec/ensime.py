@@ -25,7 +25,7 @@ class TestVimBuffer:
         self.name =  __file__
 class TestVimWindow:
     def __init__(self):
-        self.cursor = [42, 42] 
+        self.cursor = [0, 0] 
 class TestVimCurrent:
     def __init__(self):
         self.window = TestVimWindow()
@@ -34,7 +34,7 @@ class TestVim:
     def __init__(self):
         self.current = TestVimCurrent()
     def command(self, what):
-        print("nothing")
+        return None
     def eval(self, what):
         return "/tmp"
 class TestEnsime(unittest.TestCase):
@@ -118,6 +118,9 @@ class TestEnsime(unittest.TestCase):
                     return ''
 
         client.read_line(FakeSocket())
+        assert(client.complete_func('1', "") == 0)
+        client.suggests = []
+        assert(client.complete_func(0, "") == [])
 
 #    def test_init(self):
 #        self.vim.command.assert_called_once_with("highlight EnError ctermbg=red")
