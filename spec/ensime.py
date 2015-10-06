@@ -122,6 +122,11 @@ class TestEnsime(unittest.TestCase):
         client.suggests = []
         assert(client.complete_func(0, "") == [])
         client.handle_string_response({"text": "lol"})
+        assert(client.type_check("/tmp") == None)
+        assert(client.on_cursor_hold("/tmp") == None)
+        assert(client.cursor_moved("/tmp") == None)
+        assert(client.get_error_at([0, 0]) == None)
+        assert(client.display_error_if_necessary("/tmp") == None)
     def test_ensime(self):
         assert(self.ensime.client_status("spec/conf") == "startup")
         assert(self.ensime.find_config_path("/tmp/") == None)
