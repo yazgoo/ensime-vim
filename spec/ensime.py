@@ -57,10 +57,10 @@ class TestEnsime(unittest.TestCase):
         os.rmdir(path)
     def test_ensime_process(self):
         class FakeProcess:
-          def __init__(self):
-            self.pid = 1
+            def __init__(self):
+                self.pid = 1
           def poll(self):
-            None
+              None
         process = ensime_launcher.EnsimeProcess("/tmp/", FakeProcess(), "/tmp/log", None)
         assert(process.is_running())
         assert(not process.is_ready())
@@ -115,7 +115,7 @@ class TestEnsime(unittest.TestCase):
                     return 'n'
                 else:
                     return ''
-                
+
         client.read_line(FakeSocket())
 
 #    def test_init(self):
