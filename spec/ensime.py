@@ -85,10 +85,22 @@ class TestEnsime(unittest.TestCase):
         launcher.launch(conf_path)
         launcher.generate_classpath("test", "classpath")
     def test_ensime_init_path(self):
-        from ensime import EnsimeInitPath, Error
+        from ensime import EnsimeInitPath
         assert(EnsimeInitPath() == None)
+    def test_error(self):
+        from ensime import Error
         error = Error("message", 1, 2, 4)
         assert(error.includes([1, 3]))
+    def test_ensime_client(self):
+        from ensime import EnsimeClient
+        launcher = ensime_launcher.EnsimeLauncher(TestVim())
+        client = EnsimeClient(TestVim(), launcher, "spec/conf")
+        assert(not client.module_exists("unexisting_module"))
+        assert(client.module_exists("os"))
+        client.teardown("/tmp/")
+        assert(client.path_start_size("/tmp") == None)
+        assert(client.unqueue("/tmp") == None)
+        client.setup()
 
 #    def test_init(self):
 #        self.vim.command.assert_called_once_with("highlight EnError ctermbg=red")
