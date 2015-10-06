@@ -25,7 +25,7 @@ class TestVimBuffer:
         self.name =  __file__
 class TestVimWindow:
     def __init__(self):
-        self.cursor = [42, 42] 
+        self.cursor = [0, 0] 
 class TestVimCurrent:
     def __init__(self):
         self.window = TestVimWindow()
@@ -34,7 +34,7 @@ class TestVim:
     def __init__(self):
         self.current = TestVimCurrent()
     def command(self, what):
-        print("nothing")
+        return None
     def eval(self, what):
         return "/tmp"
 class TestEnsime(unittest.TestCase):
@@ -57,10 +57,10 @@ class TestEnsime(unittest.TestCase):
         os.rmdir(path)
     def test_ensime_process(self):
         class FakeProcess:
-          def __init__(self):
-            self.pid = 1
-          def poll(self):
-            None
+            def __init__(self):
+                self.pid = 1
+            def poll(self):
+                return None
         process = ensime_launcher.EnsimeProcess("/tmp/", FakeProcess(), "/tmp/log", None)
         assert(process.is_running())
         assert(not process.is_ready())
@@ -92,6 +92,7 @@ class TestEnsime(unittest.TestCase):
         error = Error("message", 1, 2, 4)
         assert(error.includes([1, 3]))
     def test_ensime_client(self):
+        self.test_ensime_launcher()
         from ensime import EnsimeClient
         launcher = ensime_launcher.EnsimeLauncher(TestVim())
         client = EnsimeClient(TestVim(), launcher, "spec/conf")
@@ -115,8 +116,11 @@ class TestEnsime(unittest.TestCase):
                     return 'n'
                 else:
                     return ''
-                
+
         client.read_line(FakeSocket())
+        assert(client.complete_func('1', "") == 0)
+        client.suggests = []
+        assert(client.complete_func(0, "") == [])
 
 #    def test_init(self):
 #        self.vim.command.assert_called_once_with("highlight EnError ctermbg=red")

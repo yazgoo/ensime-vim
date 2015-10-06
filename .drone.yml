@@ -2,7 +2,4 @@ build:
   image: ensime/ensime:latest
   pull: true
   commands:
-    - pip install ensime_launcher
-    - bundle install
-    - bundle exec rake
     - python spec/ensime.py
