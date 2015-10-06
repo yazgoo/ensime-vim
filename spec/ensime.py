@@ -43,6 +43,7 @@ class TestEnsime(unittest.TestCase):
         self.vim = vim
         vim.command = MagicMock()
         self.ensime = Ensime(vim)
+        self.poll = None
     def test_util(self):
         path = "/tmp/my/little/dir"
         test_file = path + "/test"
@@ -56,11 +57,12 @@ class TestEnsime(unittest.TestCase):
         os.remove(test_file)
         os.rmdir(path)
     def test_ensime_process(self):
+        a = self
         class FakeProcess:
             def __init__(self):
                 self.pid = 1
             def poll(self):
-                return None
+                return a.poll
         process = ensime_launcher.EnsimeProcess("/tmp/", FakeProcess(), "/tmp/log", None)
         assert(process.is_running())
         assert(not process.is_ready())
@@ -101,11 +103,16 @@ class TestEnsime(unittest.TestCase):
         client.teardown("/tmp/")
         assert(client.path_start_size("/tmp") == None)
         assert(client.unqueue("/tmp") == None)
+        client.queue.put(None)
+        assert(client.unqueue("/tmp") == None)
+        client.queue.put('{"payload":{"typehint":"blah"}}')
+        assert(client.unqueue("/tmp") == None)
         client.setup()
         assert(client.complete() == None)
         notes = [{"line":0, "col":0, "beg":0, "end":1, "msg":"msg"}]
         client.handle_new_scala_notes_event(notes)
-        client.handle_payload({"typehint":"NewScalaNotesEvent", "notes":notes})
+        [client.handle_payload({"typehint":typehint, "notes":notes, "declPos": { "file": "none" }, "fullName": "none", "text": "none", "completions":[] }) 
+                for typehint in ["NewScalaNotesEvent", "SymbolInfo", "IndexerReadyEvent", "AnalyzerReadyEvent", "BasicTypeInfo", "StringResponse", "CompletionInfoList"]]
         assert(client.get_cache_port("http") == "42")
         class FakeSocket:
             def __init__(self):
@@ -122,9 +129,48 @@ class TestEnsime(unittest.TestCase):
         client.suggests = []
         assert(client.complete_func(0, "") == [])
         client.handle_string_response({"text": "lol"})
+        assert(client.type_check("/tmp") == None)
+        assert(client.on_cursor_hold("/tmp") == None)
+        assert(client.cursor_moved("/tmp") == None)
+        assert(client.get_error_at([0, 0]) == None)
+        from ensime import Error
+        error = Error("a", 0, 0, 10)
+        client.errors.append(error)
+        assert(client.get_error_at([0, 0]) == error)
+        assert(client.display_error_if_necessary("/tmp") == None)
+        client.tell_module_missing("module")
+        assert(client.doc_browse(None) == None)
+        assert(client.type_check_cmd([]) == None)
+        assert(client.type([]) == None)
+        assert(client.symbol_at_point_req(None) == None)
+        assert(client.symbol(None) == None)
+        assert(client.open_declaration(None) == None)
+        assert(client.do_no_teardown(None) == None)
+        client.ws = True
+        assert(client.cursor_moved("") == None)
+        class FakeWS:
+            def recv(self):
+                return ""
+        client.ws = FakeWS()
+        client.x = 0
+        def once():
+            client.x = client.x + 1
+            return client.x <= 1
+        assert(client.unqueue_poll(once, 0) == None)
     def test_ensime(self):
+        self.test_ensime_launcher()
+        assert(self.ensime.client_status("spec/conf", False) == "unloaded")
         assert(self.ensime.client_status("spec/conf") == "startup")
         assert(self.ensime.find_config_path("/tmp/") == None)
+        assert(self.ensime.current_client() == None)
+        assert(len(self.ensime.client_keys()) == 1)
+        assert(self.ensime.with_current_client(lambda c: None) == None)
+        assert(self.ensime.teardown() == None)
+        for com in ["en_no_teardown", "en_type_check", "en_type", "en_declaration", "en_doc_uri", "en_doc_browse", "en_clients"]:
+            assert(getattr(self.ensime, 'com_' + com)([]) == None)
+        for au in ["buf_write_post", "cursor_hold", "cursor_moved"]:
+            assert(getattr(self.ensime, 'au_' + au)("") == None)
+        assert(self.ensime.fun_en_complete_func(["a", "b"]) == None)
 
 
 #    def test_init(self):

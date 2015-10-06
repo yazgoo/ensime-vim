@@ -2,4 +2,5 @@ build:
   image: ensime/ensime:latest
   pull: true
   commands:
+    - pip install python-coveralls
     - python spec/ensime.py
