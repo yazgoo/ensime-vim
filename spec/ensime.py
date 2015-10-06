@@ -33,7 +33,7 @@ class TestVimCurrent:
 class TestVim:
     def __init__(self):
         self.current = TestVimCurrent()
-    def command(self):
+    def command(self, what):
         print("nothing")
     def eval(self, what):
         return "/tmp"
@@ -55,6 +55,35 @@ class TestEnsime(unittest.TestCase):
         assert(os.path.exists(test_file))
         os.remove(test_file)
         os.rmdir(path)
+    def test_ensime_process(self):
+        class FakeProcess:
+          def __init__(self):
+            self.pid = 1
+          def poll(self):
+            None
+        process = ensime_launcher.EnsimeProcess("/tmp/", FakeProcess(), "/tmp/log", None)
+        assert(process.is_running())
+        assert(not process.is_ready())
+        assert(not process.aborted())
+        stop_exception = False
+        try:
+            process.stop()
+        except:
+            stop_exception = True
+        assert(stop_exception)
+    def test_ensime_launcher(self):
+        launcher = ensime_launcher.EnsimeLauncher(TestVim())
+        conf_path = "/tmp/myconf"
+        ensime_launcher.Util.write_file(conf_path, "blah 42 :scala-version test :java-home /usr :cache-dir /tmp :java-flags none")
+        conf = launcher.parse_conf(conf_path)
+        assert(conf['blah'] == '42')
+        test_dir = "/tmp/classpath_project_ensime/test"
+        ensime_launcher.Util.mkdir_p(test_dir);
+        assert(launcher.classpath_project_dir("test") == test_dir)
+        assert(launcher.build_sbt("test", "file") != None)
+        ensime_launcher.Util.write_file(test_dir + "/classpath", "")
+        launcher.launch(conf_path)
+        launcher.generate_classpath("test", "classpath")
 #    def test_init(self):
 #        self.vim.command.assert_called_once_with("highlight EnError ctermbg=red")
 #    def test_get_cache_port(self):
