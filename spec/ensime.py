@@ -85,8 +85,11 @@ class TestEnsime(unittest.TestCase):
         launcher.launch(conf_path)
         launcher.generate_classpath("test", "classpath")
     def test_ensime_init_path(self):
-        from ensime import EnsimeInitPath
+        from ensime import EnsimeInitPath, Error
         assert(EnsimeInitPath() == None)
+        error = Error("message", 1, 2, 4)
+        assert(error.includes([1, 3]))
+
 #    def test_init(self):
 #        self.vim.command.assert_called_once_with("highlight EnError ctermbg=red")
 #    def test_get_cache_port(self):
