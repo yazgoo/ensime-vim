@@ -59,8 +59,8 @@ class TestEnsime(unittest.TestCase):
         class FakeProcess:
             def __init__(self):
                 self.pid = 1
-          def poll(self):
-              None
+            def poll(self):
+                None
         process = ensime_launcher.EnsimeProcess("/tmp/", FakeProcess(), "/tmp/log", None)
         assert(process.is_running())
         assert(not process.is_ready())
