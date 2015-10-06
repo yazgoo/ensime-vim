@@ -128,6 +128,7 @@ class TestEnsime(unittest.TestCase):
         assert(client.get_error_at([0, 0]) == None)
         assert(client.display_error_if_necessary("/tmp") == None)
     def test_ensime(self):
+        self.test_ensime_launcher()
         assert(self.ensime.client_status("spec/conf") == "startup")
         assert(self.ensime.find_config_path("/tmp/") == None)
 
