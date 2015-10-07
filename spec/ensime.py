@@ -101,6 +101,10 @@ class TestEnsime(unittest.TestCase):
         client.teardown("/tmp/")
         assert(client.path_start_size("/tmp") == None)
         assert(client.unqueue("/tmp") == None)
+        client.queue.put(None)
+        assert(client.unqueue("/tmp") == None)
+        client.queue.put('{"payload":{"typehint":"blah"}}')
+        assert(client.unqueue("/tmp") == None)
         client.setup()
         assert(client.complete() == None)
         notes = [{"line":0, "col":0, "beg":0, "end":1, "msg":"msg"}]
@@ -144,6 +148,11 @@ class TestEnsime(unittest.TestCase):
         assert(len(self.ensime.client_keys()) == 1)
         assert(self.ensime.with_current_client(lambda c: None) == None)
         assert(self.ensime.teardown() == None)
+        for com in ["en_no_teardown", "en_type_check", "en_type", "en_declaration", "en_doc_uri", "en_doc_browse", "en_clients"]:
+            assert(getattr(self.ensime, 'com_' + com)([]) == None)
+        for au in ["buf_write_post", "cursor_hold", "cursor_moved"]:
+            assert(getattr(self.ensime, 'au_' + au)("") == None)
+        assert(self.ensime.fun_en_complete_func(["a", "b"]) == None)
 
 
 #    def test_init(self):
