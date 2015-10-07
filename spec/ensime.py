@@ -105,7 +105,8 @@ class TestEnsime(unittest.TestCase):
         assert(client.complete() == None)
         notes = [{"line":0, "col":0, "beg":0, "end":1, "msg":"msg"}]
         client.handle_new_scala_notes_event(notes)
-        client.handle_payload({"typehint":"NewScalaNotesEvent", "notes":notes})
+        [client.handle_payload({"typehint":typehint, "notes":notes, "declPos": { "file": "none" }, "fullName": "none", "text": "none", "completions":[] }) 
+                for typehint in ["NewScalaNotesEvent", "SymbolInfo", "IndexerReadyEvent", "AnalyzerReadyEvent", "BasicTypeInfo", "StringResponse", "CompletionInfoList"]]
         assert(client.get_cache_port("http") == "42")
         class FakeSocket:
             def __init__(self):
@@ -127,10 +128,22 @@ class TestEnsime(unittest.TestCase):
         assert(client.cursor_moved("/tmp") == None)
         assert(client.get_error_at([0, 0]) == None)
         assert(client.display_error_if_necessary("/tmp") == None)
+        client.tell_module_missing("module")
+        assert(client.doc_browse(None) == None)
+        assert(client.type_check_cmd([]) == None)
+        assert(client.type([]) == None)
+        assert(client.symbol_at_point_req(None) == None)
+        assert(client.symbol(None) == None)
+        assert(client.open_declaration(None) == None)
+        assert(client.do_no_teardown(None) == None)
     def test_ensime(self):
         self.test_ensime_launcher()
         assert(self.ensime.client_status("spec/conf") == "startup")
         assert(self.ensime.find_config_path("/tmp/") == None)
+        assert(self.ensime.current_client() == None)
+        assert(len(self.ensime.client_keys()) == 1)
+        assert(self.ensime.with_current_client(lambda c: None) == None)
+        assert(self.ensime.teardown() == None)
 
 
 #    def test_init(self):
