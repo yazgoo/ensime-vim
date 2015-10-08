@@ -89,6 +89,12 @@ class TestEnsime(unittest.TestCase):
     def test_ensime_init_path(self):
         from ensime import EnsimeInitPath
         assert(EnsimeInitPath() == None)
+        original_abspath = os.path.abspath
+        def new_abspath(path):
+            return '/autoload/ensime.vim.py'
+        os.path.abspath = new_abspath
+        assert(EnsimeInitPath() == None)
+        os.path.abspath = original_abspath
     def test_error(self):
         from ensime import Error
         error = Error("message", 1, 2, 4)
@@ -129,6 +135,13 @@ class TestEnsime(unittest.TestCase):
         client.suggests = []
         assert(client.complete_func(0, "") == [])
         client.handle_string_response({"text": "lol"})
+        client.browse = True
+        old_get = os.environ.get
+        def new_get(blah):
+            return "echo"
+        os.environ.get = new_get
+        client.handle_string_response({"text": "lol"})
+        os.environ.get = old_get
         assert(client.type_check("/tmp") == None)
         assert(client.on_cursor_hold("/tmp") == None)
         assert(client.cursor_moved("/tmp") == None)
@@ -151,12 +164,15 @@ class TestEnsime(unittest.TestCase):
         class FakeWS:
             def recv(self):
                 return ""
+            def send(self, blah):
+                None
         client.ws = FakeWS()
         client.x = 0
         def once():
             client.x = client.x + 1
             return client.x <= 1
         assert(client.unqueue_poll(once, 0) == None)
+        assert(client.send("blah") == None)
     def test_ensime(self):
         self.test_ensime_launcher()
         assert(self.ensime.client_status("spec/conf", False) == "unloaded")
