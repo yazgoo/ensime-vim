@@ -63,9 +63,26 @@ class TestEnsime(unittest.TestCase):
                 self.pid = 1
             def poll(self):
                 return a.poll
-        process = ensime_launcher.EnsimeProcess("/tmp/", FakeProcess(), "/tmp/log", None)
+        process = ensime_launcher.EnsimeProcess(
+                "/tmp/", FakeProcess(), "/tmp/log", None)
         assert(process.is_running())
+        self.poll = True
         assert(not process.is_ready())
+        self.poll = None
+        assert(not process.is_ready())
+        import socket
+        old_socket = socket.socket
+        class FakeSocket:
+            def connect(self, a):
+                None
+            def close(self):
+                None
+        def new_socket(a, b):
+            return FakeSocket()
+        socket.socket = new_socket
+        ensime_launcher.Util.write_file("/tmp/http", "42")
+        print(process.is_ready())
+        socket.socket = old_socket
         assert(not process.aborted())
         stop_exception = False
         try:
