@@ -73,6 +73,7 @@ class EnsimeClient(object):
         self.open_definition = False
         self.ws = None
         self.queue = Queue.Queue()
+        self.complete_timeout = 10
         thread.start_new_thread(self.unqueue_poll, ())
     def teardown(self, filename):
         self.log("teardown: in")
@@ -286,16 +287,18 @@ class EnsimeClient(object):
                 start -= 1
             return min(start, col)
         else:
-            while True:
+            start = time.time()
+            while (time.time() - start) < self.complete_timeout:
                 if self.suggests != None:
                     break
                 self.unqueue("")
             result = []
-            pattern = re.compile('^' + base)
-            for m in self.suggests:
-                if pattern.match(m):
-                    result.append(m)
-            self.suggests = None
+            if self.suggests != None:
+                pattern = re.compile('^' + base)
+                for m in self.suggests:
+                    if pattern.match(m):
+                        result.append(m)
+                self.suggests = None
             return result
 
 @neovim.plugin
