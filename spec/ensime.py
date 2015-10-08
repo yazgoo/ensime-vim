@@ -103,6 +103,10 @@ class TestEnsime(unittest.TestCase):
         ensime_launcher.Util.write_file(test_dir + "/classpath", "")
         launcher.launch(conf_path)
         launcher.generate_classpath("test", "classpath")
+        try:
+            launcher.load_classpath("42", "")
+        except:
+            None
     def test_ensime_init_path(self):
         from ensime import EnsimeInitPath
         assert(EnsimeInitPath() == None)
