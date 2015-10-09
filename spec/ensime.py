@@ -56,6 +56,21 @@ class TestEnsime(unittest.TestCase):
         assert(os.path.exists(test_file))
         os.remove(test_file)
         os.rmdir(path)
+    def do_test_setup_ws(self):
+        launcher = ensime_launcher.EnsimeLauncher(TestVim())
+        from ensime import EnsimeClient
+        client = EnsimeClient(TestVim(), launcher, "spec/conf")
+        try:
+            client.setup()
+        except:
+            None
+        try:
+            def false_method(what):
+                return False
+            client.module_exists = false_method
+            client.setup()
+        except:
+            None
     def test_ensime_process(self):
         a = self
         class FakeProcess:
@@ -75,13 +90,22 @@ class TestEnsime(unittest.TestCase):
         class FakeSocket:
             def connect(self, a):
                 None
+            def send(self, a):
+                None
+            def recv(self, a):
+                None
+            def settimeout(self, t):
+                None
+            def setsockopt(self, *t):
+                None
             def close(self):
                 None
-        def new_socket(a, b):
+        def new_socket(a, b = None):
             return FakeSocket()
         socket.socket = new_socket
         ensime_launcher.Util.write_file("/tmp/http", "42")
-        print(process.is_ready())
+        assert(process.is_ready())
+        self.do_test_setup_ws()
         socket.socket = old_socket
         assert(not process.aborted())
         stop_exception = False
@@ -140,6 +164,8 @@ class TestEnsime(unittest.TestCase):
         client.handle_new_scala_notes_event(notes)
         [client.handle_payload({"typehint":typehint, "notes":notes, "declPos": { "file": "none" }, "fullName": "none", "text": "none", "completions":[] }) 
                 for typehint in ["NewScalaNotesEvent", "SymbolInfo", "IndexerReadyEvent", "AnalyzerReadyEvent", "BasicTypeInfo", "StringResponse", "CompletionInfoList"]]
+        client.open_definition = True
+        client.handle_payload({"typehint": "SymbolInfo", "notes":notes, "declPos": { "file": "none" }, "fullName": "none", "text": "none", "completions":[] })
         assert(client.get_cache_port("http") == "42")
         class FakeSocket:
             def __init__(self):
@@ -153,6 +179,9 @@ class TestEnsime(unittest.TestCase):
 
         client.read_line(FakeSocket())
         assert(client.complete_func('1', "") == 0)
+        client.vim.current.window.cursor[1] = 2
+        assert(client.complete_func('1', "") == 1)
+        client.vim.current.window.cursor[1] = 0
         client.suggests = []
         assert(client.complete_func(0, "") == [])
         client.handle_string_response({"text": "lol"})
