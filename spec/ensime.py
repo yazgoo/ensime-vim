@@ -267,7 +267,7 @@ class TestEnsime(unittest.TestCase):
             assert(getattr(self.ensime, 'com_' + com)([]) == None)
         for au in ["buf_write_post", "cursor_hold", "cursor_moved"]:
             assert(getattr(self.ensime, 'au_' + au)("") == None)
-        assert(self.ensime.fun_en_complete_func(["a", "b"]) == None)
+        assert(self.ensime.fun_en_complete_func(["a", "b"], None) == [])
         ensime_launcher.Util.write_file("/tmp/.ensime", "blah 42 :scala-version test :java-home /usr :cache-dir /tmp :java-flags none")
         assert(self.ensime.current_client() != None)
         os.remove("/tmp/.ensime")

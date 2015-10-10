@@ -85,7 +85,7 @@ class EnsimeClient(object):
             self.log("starting up ensime")
             self.message("ensime startup")
             self.ensime = self.launcher.launch(self.config_path)
-            self.vim.command("set completefunc=EnCompleteFunc")
+            self.vim.command("set omnifunc=EnCompleteFunc")
         if self.ws == None and self.ensime.is_ready():
             if self.module_exists("websocket"):
                 from websocket import create_connection
@@ -158,7 +158,7 @@ class EnsimeClient(object):
         self.path_start_size("Type")
     def symbol_at_point_req(self, open_definition):
         self.open_definition = open_definition
-        pos = self.get_position(self.cursor()[0], self.cursor()[1] + 1)
+        pos = self.get_position(self.cursor()[0], self.cursor()[1])
         self.send_request({
             "point": pos, "typehint":"SymbolAtPointReq", "file":self.path()})
     # @neovim.command('EnDeclaration', range='', nargs='*', sync=True)
@@ -219,11 +219,14 @@ class EnsimeClient(object):
         self.log("handle_payload: in")
         typehint = payload["typehint"]
         if typehint == "SymbolInfo":
-            self.message(payload["declPos"]["file"])
-            if self.open_definition:
-                self.vim.command("vsplit {}".format(
-                    payload["declPos"]["file"]))
-                self.vim.command("set ft=scala")
+            try:
+                self.message(payload["declPos"]["file"])
+                if self.open_definition:
+                    self.vim.command(":vsplit {}".format(
+                        payload["declPos"]["file"]))
+                    self.vim.command("filetype detect")
+            except KeyError:
+                self.message("symbol not found")
         elif typehint == "IndexerReadyEvent":
             self.message("ensime indexer ready")
         elif typehint == "AnalyzerReadyEvent":
@@ -382,6 +385,9 @@ class Ensime:
         else:
             return proc(c)
 
+    def is_scala_file(self):
+        return self.vim.eval('&filetype') == 'scala'
+
     @neovim.command('EnNoTeardown', range='', nargs='*', sync=True)
     def com_en_no_teardown(self, args, range = None):
         self.with_current_client(lambda c: c.do_no_teardown(None, None))
@@ -436,6 +442,8 @@ class Ensime:
         self.with_current_client(lambda c: c.cursor_moved(filename))
 
     @neovim.function('EnCompleteFunc', sync=True)
-    def fun_en_complete_func(self, args):
-        (findstart, base) = args
-        return self.with_current_client(lambda c: c.complete_func(findstart, base))
+    def fun_en_complete_func(self, findstart, base):
+        if self.is_scala_file():
+            return self.with_current_client(lambda c: c.complete_func(findstart, base))
+        else:
+            return []
