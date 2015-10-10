@@ -6,8 +6,8 @@ function! ensime#client_keys() abort
     return s:call_plugin('client_keys', [])
 endfunction
 
-function! ensime#client_status(config_path) abort
-    return s:call_plugin('client_status', [a:config_path])
+function! ensime#client_status(config_path, create) abort
+    return s:call_plugin('client_status', [a:config_path, a:create])
 endfunction
 
 function! ensime#teardown() abort

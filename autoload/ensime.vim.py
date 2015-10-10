@@ -49,12 +49,12 @@ class EnsimeClient(object):
         f = open(log_dir + "ensime-vim.log", "a")
         f.write("{}: {}\n".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f"), what))
         f.close()
-    def unqueue_poll(self):
-        while True:
+    def unqueue_poll(self, running = lambda: True, sleep_t = 1):
+        while running():
             if self.ws != None:
                 result = self.ws.recv()
                 self.queue.put(result)
-            time.sleep(1)
+            time.sleep(sleep_t)
     def __init__(self, vim, launcher, config_path):
         self.config_path = os.path.abspath(config_path)
         self.ensime_cache = os.path.join(os.path.dirname(self.config_path), ".ensime_cache")
@@ -73,6 +73,7 @@ class EnsimeClient(object):
         self.open_definition = False
         self.ws = None
         self.queue = Queue.Queue()
+        self.complete_timeout = 10
         thread.start_new_thread(self.unqueue_poll, ())
     def teardown(self, filename):
         self.log("teardown: in")
@@ -212,8 +213,9 @@ class EnsimeClient(object):
         if typehint == "SymbolInfo":
             self.message(payload["declPos"]["file"])
             if self.open_definition:
-                self.vim.command(":vsplit {}".format(
+                self.vim.command("vsplit {}".format(
                     payload["declPos"]["file"]))
+                self.vim.command("set ft=scala")
         elif typehint == "IndexerReadyEvent":
             self.message("ensime indexer ready")
         elif typehint == "AnalyzerReadyEvent":
@@ -274,10 +276,6 @@ class EnsimeClient(object):
                 self.handle_payload(_json["payload"])
         self.log("unqueue: before close")
         self.log("unqueue: after close")
-    def autocmd_handler(self, filename):
-        self._increment_calls()
-        self.vim.current.line = (
-            'Autocmd: Called %s times, file: %s' % (self.calls, filename))
     # @neovim.function('EnCompleteFunc', sync=True)
     def complete_func(self, findstart, base):
         if findstart == '1':
@@ -290,16 +288,18 @@ class EnsimeClient(object):
                 start -= 1
             return min(start, col)
         else:
-            while True:
+            start = time.time()
+            while (time.time() - start) < self.complete_timeout:
                 if self.suggests != None:
                     break
                 self.unqueue("")
             result = []
-            pattern = re.compile('^' + base)
-            for m in self.suggests:
-                if pattern.match(m):
-                    result.append(m)
-            self.suggests = None
+            if self.suggests != None:
+                pattern = re.compile('^' + base)
+                for m in self.suggests:
+                    if pattern.match(m):
+                        result.append(m)
+                self.suggests = None
             return result
 
 class Ensime:
@@ -315,8 +315,8 @@ class Ensime:
     def client_keys(self):
         return self.clients.keys()
 
-    def client_status(self, config_path):
-        c = self.client_for(config_path)
+    def client_status(self, config_path, create = True):
+        c = self.client_for(config_path, create)
         if c == None or c.ensime == None:
             return 'unloaded'
         elif c.ensime.is_ready():
