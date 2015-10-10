@@ -213,8 +213,9 @@ class EnsimeClient(object):
         if typehint == "SymbolInfo":
             self.message(payload["declPos"]["file"])
             if self.open_definition:
-                self.vim.command(":vsplit {}".format(
+                self.vim.command("vsplit {}".format(
                     payload["declPos"]["file"]))
+                self.vim.command("set ft=scala")
         elif typehint == "IndexerReadyEvent":
             self.message("ensime indexer ready")
         elif typehint == "AnalyzerReadyEvent":
