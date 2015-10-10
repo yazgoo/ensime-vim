@@ -30,8 +30,12 @@ function! ensime#with_current_client(proc) abort
     return s:call_plugin('with_current_client', [a:proc])
 endfunction
 
-function! ensime#fun_en_complete_func(args) abort
-    return s:call_plugin('fun_en_complete_func', [a:args])
+function! ensime#is_scala_file() abort
+    return s:call_plugin('is_scala_file', [])
+endfunction
+
+function! ensime#fun_en_complete_func(findstart, base) abort
+    return s:call_plugin('fun_en_complete_func', [a:findstart, a:base])
 endfunction
 
 function! ensime#au_vimleave(filename) abort

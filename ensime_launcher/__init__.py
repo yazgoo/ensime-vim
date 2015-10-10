@@ -33,6 +33,7 @@ class EnsimeProcess:
         self.__cleanup = cleanup
 
     def stop(self):
+        if self.process is None: return
         os.kill(self.process.pid, signal.SIGTERM)
         self.__cleanup()
         self.__stopped_manually = True
@@ -41,7 +42,7 @@ class EnsimeProcess:
         return not (self.__stopped_manually or self.is_running())
 
     def is_running(self):
-        return self.process.poll() == None
+        return self.process is None or self.process.poll() == None
 
     def is_ready(self):
         if not self.is_running():
@@ -67,6 +68,10 @@ class EnsimeLauncher:
 
     def launch(self, conf_path):
         conf = self.parse_conf(conf_path)
+        process = EnsimeProcess(conf['cache-dir'], None, None, lambda: None)
+        if process.is_ready():
+            return process
+
         classpath = self.load_classpath(conf['scala-version'], conf['java-home'])
         return self.start_process(
                 conf_path = os.path.abspath(conf_path),
