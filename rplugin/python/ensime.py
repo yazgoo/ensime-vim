@@ -166,7 +166,6 @@ class EnsimeClient(object):
         self.log("inspect_type: in")
         pos = self.get_position(self.cursor()[0], self.cursor()[1])
         self.send_request({"point": pos, "typehint": "InspectTypeAtPointReq", "file": self.path(), "range": {"from": pos, "to": pos}})
->>>>>>> 98c9a81bd9f2e33472005fce3b711daa05b0b6d5
     # @neovim.command('EnDocUri', range='', nargs='*', sync=True)
     def doc_uri(self, args, range = None):
         self.log("doc_uri: in")
