@@ -161,6 +161,11 @@ class EnsimeClient(object):
     def symbol(self, args, range = None):
         self.log("symbol: in")
         self.symbol_at_point_req(False)
+    # @neovim.command('EnInspectType', range='', nargs='*', sync=True)
+    def inspect_type(self, args, range = None):
+        self.log("inspect_type: in")
+        pos = self.get_position(self.cursor()[0], self.cursor()[1])
+        self.send_request({"point": pos, "typehint": "InspectTypeAtPointReq", "file": self.path(), "range": {"from": pos, "to": pos}})
     # @neovim.command('EnDocUri', range='', nargs='*', sync=True)
     def doc_uri(self, args, range = None):
         self.log("doc_uri: in")
@@ -223,6 +228,9 @@ class EnsimeClient(object):
             self.handle_string_response(payload)
         elif typehint == "CompletionInfoList":
             self.handle_completion_info_list(payload["completions"])
+        elif typehint == "TypeInspectInfo":
+            self.message(payload["type"]["fullName"])
+
     def send_request(self, request):
         self.log("send_request: in")
         self.send(json.dumps({"callId" : self.callId,"req" : request}))
@@ -379,6 +387,9 @@ class Ensime:
 
     def com_en_symbol(self, args, range = None):
         self.with_current_client(lambda c: c.symbol(args, range))
+
+    def com_en_inspect_type(self, args, range = None):
+        self.with_current_client(lambda c: c.inspect_type(args, range))
 
     def com_en_doc_uri(self, args, range = None):
         self.with_current_client(lambda c: c.doc_uri(args, range))
