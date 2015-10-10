@@ -166,7 +166,7 @@ class TestEnsime(unittest.TestCase):
                 for typehint in ["NewScalaNotesEvent", "SymbolInfo", "IndexerReadyEvent", "AnalyzerReadyEvent", "BasicTypeInfo", "StringResponse", "CompletionInfoList"]]
         client.open_definition = True
         client.handle_payload({"typehint": "SymbolInfo", "notes":notes, "declPos": { "file": "none" }, "fullName": "none", "text": "none", "completions":[] })
-        assert(client.get_cache_port("http") == "42")
+        assert(client.ensime.http_port() == 42)
         class FakeSocket:
             def __init__(self):
                 self.first = True
