@@ -21,7 +21,7 @@ They should be ran from
 :EnDocUri        displays documentation url under cursor
 :EnDocBrowse     launch $BROWSER (env variable) documentation url
 :EnTypeCheck     launch a check on current file (launched on save)
-:EnCompleteFunc  get an autocompletion menu (via ctrl+X ctrl+U) - blocking
+:EnCompleteFunc  get an omnicompletion menu (via ctrl+X ctrl+O) - blocking
 
 CUSTOMIZING
 
