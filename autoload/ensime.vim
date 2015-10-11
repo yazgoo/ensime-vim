@@ -42,6 +42,14 @@ function! ensime#au_vimleave(filename) abort
     return s:call_plugin('au_vimleave', [a:filename])
 endfunction
 
+function! ensime#au_buf_enter(filename) abort
+    return s:call_plugin('au_buf_enter', [a:filename])
+endfunction
+
+function! ensime#au_buf_leave(filename) abort
+    return s:call_plugin('au_buf_leave', [a:filename])
+endfunction
+
 function! ensime#au_buf_write_post(filename) abort
     return s:call_plugin('au_buf_write_post', [a:filename])
 endfunction

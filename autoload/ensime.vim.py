@@ -26,13 +26,14 @@ import thread
 import inspect
 import Queue
 class Error:
-    def __init__(self, message, l, c, e):
+    def __init__(self, path, message, l, c, e):
+        self.path = os.path.abspath(path)
         self.message = message
         self.l = l
         self.c = c
         self.e = e
-    def includes(self, cursor):
-        return cursor[0] == self.l and self.c <= cursor[1] and cursor[1] < self.e
+    def includes(self, path, cursor):
+        return self.path == os.path.abspath(path) and cursor[0] == self.l and self.c <= cursor[1] and cursor[1] < self.e
 
 class EnsimeClient(object):
     def module_exists(self, module_name):
@@ -201,10 +202,10 @@ class EnsimeClient(object):
             l = note["line"]
             c = note["col"] - 1
             e = note["col"] + (note["end"] - note["beg"])
-            self.errors.append(Error(note["msg"], l, c, e))
-            self.matches.append(self.vim.eval(
-                "matchadd(g:EnErrorStyle, '\\%{}l\\%>{}c\\%<{}c')".format(l, c, e)))
-            self.message(note["msg"])
+            if os.path.abspath(self.vim.eval("expand('%:p')")) == os.path.abspath(note["file"]):
+                self.errors.append(Error(note["file"], note["msg"], l, c, e))
+                self.matches.append(self.vim.eval(
+                    "matchadd(g:EnErrorStyle, '\\%{}l\\%>{}c\\%<{}c')".format(l, c, e)))
     def handle_string_response(self, payload):
         url = "http://127.0.0.1:{}/{}".format(self.ensime.http_port(),
                 payload["text"])
@@ -215,7 +216,7 @@ class EnsimeClient(object):
     def handle_completion_info_list(self, completions):
         self.suggests = [completion["name"] for completion in completions]
     def handle_payload(self, payload):
-        self.log("handle_payload: in")
+        self.log("handle_payload: in {}".format(payload))
         typehint = payload["typehint"]
         if typehint == "SymbolInfo":
             try:
@@ -245,19 +246,30 @@ class EnsimeClient(object):
         self.log("send_request: in")
         self.send(json.dumps({"callId" : self.callId,"req" : request}))
         self.callId += 1
+    def clean_errors(self):
+        for i in self.matches:
+            self.vim.eval("matchdelete({})".format(i))
+        self.matches = []
+        self.errors = []
+    # @neovim.autocmd('BufLeave', pattern='*.scala', eval='expand("<afile>")', sync=True)
+    def buffer_leave(self, filename):
+        self.clean_errors()
+    # @neovim.autocmd('BufEnter', pattern='*.scala', eval='expand("<afile>")', sync=True)
+    def buffer_enter(self, filename):
+        if self.vim.eval("&mod") == '0':
+            self.type_check(filename)
     # @neovim.autocmd('BufWritePost', pattern='*.scala', eval='expand("<afile>")', sync=True)
     def type_check(self, filename):
         self.log("type_check: in")
         self.send_request({"typehint": "TypecheckFilesReq",
             "files" : [self.path()]})
-        for i in self.matches:
-            self.vim.eval("matchdelete({})".format(i))
-        self.matches = []
-        self.errors = []
+        self.clean_errors()
     # @neovim.autocmd('CursorHold', pattern='*.scala', eval='expand("<afile>")', sync=True)
     def on_cursor_hold(self, filename):
         self.log("on_cursor_hold: in")
         self.unqueue(filename)
+        # http://vim.wikia.com/wiki/Timer_to_execute_commands_periodically
+        self.vim.command('set updatetime=1000')
         self.vim.command('call feedkeys("f\e")')
     # @neovim.autocmd('CursorMoved', pattern='*.scala', eval='expand("<afile>")', sync=True)
     def cursor_moved(self, filename):
@@ -267,7 +279,7 @@ class EnsimeClient(object):
         self.unqueue(filename)
     def get_error_at(self, cursor):
         for error in self.errors:
-            if error.includes(cursor):
+            if error.includes(self.vim.eval("expand('%:p')"), cursor):
                 return error
         return None
     def display_error_if_necessary(self, filename):
@@ -417,6 +429,12 @@ class Ensime:
 
     def au_vimleave(self, filename):
         self.teardown()
+
+    def au_buf_enter(self, filename):
+        self.with_current_client(lambda c: c.buffer_enter(filename))
+
+    def au_buf_leave(self, filename):
+        self.with_current_client(lambda c: c.buffer_leave(filename))
 
     def au_buf_write_post(self, filename):
         self.with_current_client(lambda c: c.type_check(filename))
