@@ -4,6 +4,8 @@ endif
 augroup ensime
     autocmd!
     autocmd VimLeave *.scala call ensime#au_vimleave(expand("<afile>"))
+    autocmd BufEnter *.scala call ensime#au_buf_enter(expand("<afile>"))
+    autocmd BufLeave *.scala call ensime#au_buf_leave(expand("<afile>"))
     autocmd BufWritePost *.scala call ensime#au_buf_write_post(expand("<afile>"))
     autocmd CursorHold *.scala call ensime#au_cursor_hold(expand("<afile>"))
     autocmd CursorMoved *.scala call ensime#au_cursor_moved(expand("<afile>"))
