@@ -142,8 +142,8 @@ class TestEnsime(unittest.TestCase):
         os.path.abspath = original_abspath
     def test_error(self):
         from ensime import Error
-        error = Error("message", 1, 2, 4)
-        assert(error.includes([1, 3]))
+        error = Error("/tmp", "message", 1, 2, 4)
+        assert(error.includes("/tmp", [1, 3]))
     def test_ensime_client(self):
         self.test_ensime_launcher()
         from ensime import EnsimeClient
@@ -160,7 +160,7 @@ class TestEnsime(unittest.TestCase):
         assert(client.unqueue("/tmp") == None)
         client.setup()
         assert(client.complete() == None)
-        notes = [{"line":0, "col":0, "beg":0, "end":1, "msg":"msg"}]
+        notes = [{"line":0, "col":0, "beg":0, "end":1, "msg":"msg", "file":"file"}]
         client.handle_new_scala_notes_event(notes)
         [client.handle_payload({"typehint":typehint, "notes":notes, "declPos": { "file": "none" }, "fullName": "none", "text": "none", "completions":[] }) 
                 for typehint in ["NewScalaNotesEvent", "SymbolInfo", "IndexerReadyEvent", "AnalyzerReadyEvent", "BasicTypeInfo", "StringResponse", "CompletionInfoList"]]
@@ -200,7 +200,7 @@ class TestEnsime(unittest.TestCase):
         assert(client.cursor_moved("/tmp") == None)
         assert(client.get_error_at([0, 0]) == None)
         from ensime import Error
-        error = Error("a", 0, 0, 10)
+        error = Error("/tmp", "a", 0, 0, 10)
         client.errors.append(error)
         assert(client.get_error_at([0, 0]) == error)
         assert(client.display_error_if_necessary("/tmp") == None)
