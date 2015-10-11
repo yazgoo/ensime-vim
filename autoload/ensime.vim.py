@@ -55,8 +55,10 @@ class EnsimeClient(object):
             if self.ws != None:
                 result = self.ws.recv()
                 self.queue.put(result)
+                for callback in self.receive_callbacks:
+                    callback(result)
             time.sleep(sleep_t)
-    def __init__(self, vim, launcher, config_path):
+    def __init__(self, vim, launcher, config_path, receive_callbacks):
         self.config_path = os.path.abspath(config_path)
         self.ensime_cache = os.path.join(os.path.dirname(self.config_path), ".ensime_cache")
         self.launcher = launcher
@@ -64,6 +66,7 @@ class EnsimeClient(object):
         self.callId = 0
         self.browse = False
         self.vim = vim
+        self.receive_callbacks = receive_callbacks
         self.matches = []
         self.errors = []
         self.vim.command("highlight EnError ctermbg=red gui=underline")
@@ -331,6 +334,7 @@ class EnsimeClient(object):
 class Ensime:
     def __init__(self, vim):
         self.vim = vim
+        self.receive_callbacks = []
         self.clients = {} # .ensime path => ensime server process
         self.launcher = ensime_launcher.EnsimeLauncher(vim)
 
@@ -370,7 +374,7 @@ class Ensime:
         if abs_path in self.clients:
             return self.clients[abs_path]
         elif create:
-            client = EnsimeClient(self.vim, self.launcher, config_path)
+            client = EnsimeClient(self.vim, self.launcher, config_path, self.receive_callbacks)
             self.clients[abs_path] = client
             self.__message("Starting up ensime server...")
             client.setup()
@@ -453,4 +457,9 @@ class Ensime:
             return self.with_current_client(lambda c: c.complete_func(findstart, base))
         else:
             return []
+    def on_receive(self, callback):
+        self.receive_callbacks.put(callback)
+    def send_request(self, request):
+        self.with_current_client(lambda c: c.send_request(request))
 ensime_plugin = Ensime(vim)
+vim.message("loaded ensime plugin")
