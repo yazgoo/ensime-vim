@@ -56,6 +56,9 @@ class EnsimeClient(object):
                 result = self.ws.recv()
                 self.queue.put(result)
             time.sleep(sleep_t)
+    def on_receive(self, name, callback):
+        self.log("on_receive: {}".format(callback))
+        self.receive_callbacks[name] = callback
     def __init__(self, vim, launcher, config_path):
         self.config_path = os.path.abspath(config_path)
         self.ensime_cache = os.path.join(os.path.dirname(self.config_path), ".ensime_cache")
@@ -64,6 +67,7 @@ class EnsimeClient(object):
         self.callId = 0
         self.browse = False
         self.vim = vim
+        self.receive_callbacks = {}
         self.matches = []
         self.errors = []
         self.vim.command("highlight EnError ctermbg=red gui=underline")
@@ -298,6 +302,9 @@ class EnsimeClient(object):
                 break
             _json = json.loads(result)
             if _json["payload"] != None:
+                for name in self.receive_callbacks:
+                    self.log("launching callback: {}".format(name))
+                    self.receive_callbacks[name](self, _json["payload"])
                 self.handle_payload(_json["payload"])
         self.log("unqueue: before close")
         self.log("unqueue: after close")
@@ -453,4 +460,8 @@ class Ensime:
             return self.with_current_client(lambda c: c.complete_func(findstart, base))
         else:
             return []
+    def on_receive(self, name, callback):
+        self.with_current_client(lambda c: c.on_receive(name,  callback))
+    def send_request(self, request):
+        self.with_current_client(lambda c: c.send_request(request))
 ensime_plugin = Ensime(vim)
