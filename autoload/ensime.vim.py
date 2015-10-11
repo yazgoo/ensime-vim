@@ -73,14 +73,13 @@ class EnsimeClient(object):
         self.open_definition = False
         self.ws = None
         self.queue = Queue.Queue()
-        self.complete_timeout = 10
+        self.complete_timeout = 20
         thread.start_new_thread(self.unqueue_poll, ())
     def teardown(self, filename):
         self.log("teardown: in")
         if self.ensime != None and not self.no_teardown:
             self.ensime.stop()
     def setup(self):
-        self.log("setup: in")
         if self.ensime == None:
             self.log("starting up ensime")
             self.message("ensime startup")
@@ -292,6 +291,7 @@ class EnsimeClient(object):
         self.log("unqueue: after close")
     # @neovim.function('EnCompleteFunc', sync=True)
     def complete_func(self, findstart, base):
+        self.log("complete_func: in {} {}".format(findstart, base))
         if findstart == '1':
             self.complete()
             line = self.vim.eval("getline('.')")
@@ -427,7 +427,10 @@ class Ensime:
     def au_cursor_moved(self, filename):
         self.with_current_client(lambda c: c.cursor_moved(filename))
 
-    def fun_en_complete_func(self, findstart, base):
+    def fun_en_complete_func(self, findstart, base = None):
+        if base == None:
+            base = findstart[1]
+            findstart = findstart[0]
         if self.is_scala_file():
             return self.with_current_client(lambda c: c.complete_func(findstart, base))
         else:
