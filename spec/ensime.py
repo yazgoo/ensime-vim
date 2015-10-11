@@ -162,6 +162,7 @@ class TestEnsime(unittest.TestCase):
         assert(client.complete() == None)
         notes = [{"line":0, "col":0, "beg":0, "end":1, "msg":"msg", "file":"file"}]
         client.handle_new_scala_notes_event(notes)
+        ensime_launcher.Util.write_file("/tmp/http", "42")
         [client.handle_payload({"typehint":typehint, "notes":notes, "declPos": { "file": "none" }, "fullName": "none", "text": "none", "completions":[] }) 
                 for typehint in ["NewScalaNotesEvent", "SymbolInfo", "IndexerReadyEvent", "AnalyzerReadyEvent", "BasicTypeInfo", "StringResponse", "CompletionInfoList"]]
         client.open_definition = True
