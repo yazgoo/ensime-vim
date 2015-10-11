@@ -83,7 +83,7 @@ All merges should be done on dev branch before being merged onto master
 # integrating with your own plugin
 
 It is possible to register callbacks and send events to ensime.
-Check [this plugin example](https://github.com/yazgoo/ensime-vim-typecheck/blob/master/plugin/ensime_typecheck.vim).
+Check [this plugin example](https://github.com/yazgoo/ensime-vim-typecheck).
 
 # developer info
 
