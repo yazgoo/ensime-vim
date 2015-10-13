@@ -6,8 +6,8 @@ function! ensime#client_keys() abort
     return s:call_plugin('client_keys', [])
 endfunction
 
-function! ensime#client_status(config_path) abort
-    return s:call_plugin('client_status', [a:config_path])
+function! ensime#client_status(config_path, create) abort
+    return s:call_plugin('client_status', [a:config_path, a:create])
 endfunction
 
 function! ensime#teardown() abort
@@ -30,12 +30,32 @@ function! ensime#with_current_client(proc) abort
     return s:call_plugin('with_current_client', [a:proc])
 endfunction
 
-function! ensime#fun_en_complete_func(args) abort
-    return s:call_plugin('fun_en_complete_func', [a:args])
+function! ensime#is_scala_file() abort
+    return s:call_plugin('is_scala_file', [])
+endfunction
+
+function! ensime#on_receive(name, callback) abort
+    return s:call_plugin('on_receive', [a:name, a:callback])
+endfunction
+
+function! ensime#send_request(request) abort
+    return s:call_plugin('send_request', [a:request])
+endfunction
+
+function! ensime#fun_en_complete_func(findstart, base) abort
+    return s:call_plugin('fun_en_complete_func', [a:findstart, a:base])
 endfunction
 
 function! ensime#au_vimleave(filename) abort
     return s:call_plugin('au_vimleave', [a:filename])
+endfunction
+
+function! ensime#au_buf_enter(filename) abort
+    return s:call_plugin('au_buf_enter', [a:filename])
+endfunction
+
+function! ensime#au_buf_leave(filename) abort
+    return s:call_plugin('au_buf_leave', [a:filename])
 endfunction
 
 function! ensime#au_buf_write_post(filename) abort
@@ -70,12 +90,20 @@ function! ensime#com_en_symbol(args, range) abort
     return s:call_plugin('com_en_symbol', [a:args, a:range])
 endfunction
 
+function! ensime#com_en_inspect_type(args, range) abort
+    return s:call_plugin('com_en_inspect_type', [a:args, a:range])
+endfunction
+
 function! ensime#com_en_doc_uri(args, range) abort
     return s:call_plugin('com_en_doc_uri', [a:args, a:range])
 endfunction
 
 function! ensime#com_en_doc_browse(args, range) abort
     return s:call_plugin('com_en_doc_browse', [a:args, a:range])
+endfunction
+
+function! ensime#com_en_suggest_import(args, range) abort
+    return s:call_plugin('com_en_suggest_import', [a:args, a:range])
 endfunction
 
 function! ensime#com_en_clients(args, range) abort

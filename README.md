@@ -80,6 +80,11 @@ And export them to vim plugin format via:
 
 All merges should be done on dev branch before being merged onto master
 
+# integrating with your own plugin
+
+It is possible to register callbacks and send events to ensime.
+Check [this plugin example](https://github.com/yazgoo/ensime-vim-typecheck).
+
 # developer info
 
 Needs some love. Please get in contact if you would like to help! There was some old work that is no longer compatible with the ENSIME server but it may serve as a good starting place:

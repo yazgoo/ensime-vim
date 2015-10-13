@@ -58,6 +58,7 @@ class TestEnsime(unittest.TestCase):
         os.rmdir(path)
     def do_test_setup_ws(self):
         launcher = ensime_launcher.EnsimeLauncher(TestVim())
+<<<<<<< HEAD
         from ensime import EnsimeClient
         client = EnsimeClient(TestVim(), launcher, "spec/conf")
         try:
@@ -71,6 +72,17 @@ class TestEnsime(unittest.TestCase):
             client.setup()
         except:
             None
+=======
+        from ensime import EnsimeClient, Ensime
+        client = EnsimeClient(TestVim(), launcher, "spec/conf")
+        client.setup()
+        def false_method(what):
+            return False
+        client.module_exists = false_method
+        client.setup()
+        ensime = Ensime(TestVim())
+        assert(ensime.client_status("spec/conf") == "ready")
+>>>>>>> 1edb136e25e3fbe3ed0dace64780774a85f22da7
     def test_ensime_process(self):
         a = self
         class FakeProcess:
@@ -88,6 +100,11 @@ class TestEnsime(unittest.TestCase):
         import socket
         old_socket = socket.socket
         class FakeSocket:
+<<<<<<< HEAD
+=======
+            def __init__(self, a = None, b = None):
+                None
+>>>>>>> 1edb136e25e3fbe3ed0dace64780774a85f22da7
             def connect(self, a):
                 None
             def send(self, a):
@@ -100,9 +117,17 @@ class TestEnsime(unittest.TestCase):
                 None
             def close(self):
                 None
+<<<<<<< HEAD
         def new_socket(a, b = None):
             return FakeSocket()
         socket.socket = new_socket
+=======
+        socket.socket = FakeSocket
+        import websocket
+        def noop(a = None):
+            None
+        websocket.create_connection = noop
+>>>>>>> 1edb136e25e3fbe3ed0dace64780774a85f22da7
         ensime_launcher.Util.write_file("/tmp/http", "42")
         assert(process.is_ready())
         self.do_test_setup_ws()
@@ -142,8 +167,8 @@ class TestEnsime(unittest.TestCase):
         os.path.abspath = original_abspath
     def test_error(self):
         from ensime import Error
-        error = Error("message", 1, 2, 4)
-        assert(error.includes([1, 3]))
+        error = Error("/tmp", "message", 1, 2, 4)
+        assert(error.includes("/tmp", [1, 3]))
     def test_ensime_client(self):
         self.test_ensime_launcher()
         from ensime import EnsimeClient
@@ -160,13 +185,18 @@ class TestEnsime(unittest.TestCase):
         assert(client.unqueue("/tmp") == None)
         client.setup()
         assert(client.complete() == None)
-        notes = [{"line":0, "col":0, "beg":0, "end":1, "msg":"msg"}]
+        notes = [{"line":0, "col":0, "beg":0, "end":1, "msg":"msg", "file":"file"}]
         client.handle_new_scala_notes_event(notes)
+        ensime_launcher.Util.write_file("/tmp/http", "42")
         [client.handle_payload({"typehint":typehint, "notes":notes, "declPos": { "file": "none" }, "fullName": "none", "text": "none", "completions":[] }) 
                 for typehint in ["NewScalaNotesEvent", "SymbolInfo", "IndexerReadyEvent", "AnalyzerReadyEvent", "BasicTypeInfo", "StringResponse", "CompletionInfoList"]]
         client.open_definition = True
         client.handle_payload({"typehint": "SymbolInfo", "notes":notes, "declPos": { "file": "none" }, "fullName": "none", "text": "none", "completions":[] })
+<<<<<<< HEAD
         assert(client.get_cache_port("http") == "42")
+=======
+        assert(client.ensime.http_port() == 42)
+>>>>>>> 1edb136e25e3fbe3ed0dace64780774a85f22da7
         class FakeSocket:
             def __init__(self):
                 self.first = True
@@ -182,6 +212,7 @@ class TestEnsime(unittest.TestCase):
         client.vim.current.window.cursor[1] = 2
         assert(client.complete_func('1', "") == 1)
         client.vim.current.window.cursor[1] = 0
+<<<<<<< HEAD
         client.suggests = []
         assert(client.complete_func(0, "") == [])
         client.handle_string_response({"text": "lol"})
@@ -191,13 +222,27 @@ class TestEnsime(unittest.TestCase):
             return "echo"
         os.environ.get = new_get
         client.handle_string_response({"text": "lol"})
+=======
+        client.suggests = ["a"]
+        assert(client.complete_func(0, "") == ['a'])
+        client.suggests = None
+        client.complete_timeout = 0.1
+        print(client.complete_func(0, ""))
+        client.handle_string_response({"text": "lol"})
+        client.browse = True
+        old_get = os.environ.get
+        def new_get(blah):
+            return "echo"
+        os.environ.get = new_get
+        client.handle_string_response({"text": "lol"})
+>>>>>>> 1edb136e25e3fbe3ed0dace64780774a85f22da7
         os.environ.get = old_get
         assert(client.type_check("/tmp") == None)
         assert(client.on_cursor_hold("/tmp") == None)
         assert(client.cursor_moved("/tmp") == None)
         assert(client.get_error_at([0, 0]) == None)
         from ensime import Error
-        error = Error("a", 0, 0, 10)
+        error = Error("/tmp", "a", 0, 0, 10)
         client.errors.append(error)
         assert(client.get_error_at([0, 0]) == error)
         assert(client.display_error_if_necessary("/tmp") == None)
@@ -227,16 +272,47 @@ class TestEnsime(unittest.TestCase):
         self.test_ensime_launcher()
         assert(self.ensime.client_status("spec/conf", False) == "unloaded")
         assert(self.ensime.client_status("spec/conf") == "startup")
+        old_poll = self.ensime.client_for("spec/conf", True).ensime.process.poll
+        def fake_poll():
+            return "a"
+        _ensime = self.ensime.client_for("spec/conf", True).ensime
+        _ensime.process.poll = fake_poll 
+        assert(self.ensime.client_status("spec/conf") == "aborted")
+        old_aborted = _ensime.aborted
+        def fake_aborted():
+            return False
+        _ensime.aborted = fake_aborted
+        assert(self.ensime.client_status("spec/conf") == "stopped")
+        _ensime.aborted = old_aborted
+        self.ensime.client_for("spec/conf", True).ensime.process.poll = old_poll
         assert(self.ensime.find_config_path("/tmp/") == None)
-        assert(self.ensime.current_client() == None)
         assert(len(self.ensime.client_keys()) == 1)
         assert(self.ensime.with_current_client(lambda c: None) == None)
+        old_current_client = self.ensime.current_client
+        class FakeClient:
+            def symbol(self, a, b):
+                None
+        def fake_current_client():
+            return FakeClient()
+        self.ensime.current_client = fake_current_client
+        assert(self.ensime.with_current_client(lambda c: None) == None)
+        self.ensime.com_en_symbol([])
+        old_teardown = self.ensime.teardown
+        self.ensime.teardown = fake_current_client
+        self.ensime.au_vimleave("")
+        self.ensime.current_client = old_current_client
+        self.ensime.teardown = old_teardown
+
+
         assert(self.ensime.teardown() == None)
         for com in ["en_no_teardown", "en_type_check", "en_type", "en_declaration", "en_doc_uri", "en_doc_browse", "en_clients"]:
             assert(getattr(self.ensime, 'com_' + com)([]) == None)
         for au in ["buf_write_post", "cursor_hold", "cursor_moved"]:
             assert(getattr(self.ensime, 'au_' + au)("") == None)
-        assert(self.ensime.fun_en_complete_func(["a", "b"]) == None)
+        assert(self.ensime.fun_en_complete_func(["a", "b"], None) == [])
+        ensime_launcher.Util.write_file("/tmp/.ensime", "blah 42 :scala-version test :java-home /usr :cache-dir /tmp :java-flags none")
+        assert(self.ensime.current_client() != None)
+        os.remove("/tmp/.ensime")
 
 
 #    def test_init(self):
