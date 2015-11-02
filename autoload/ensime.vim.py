@@ -213,8 +213,10 @@ class EnsimeClient(object):
             e = note["col"] + (note["end"] - note["beg"])
             if os.path.abspath(self.vim.eval("expand('%:p')")) == os.path.abspath(note["file"]):
                 self.errors.append(Error(note["file"], note["msg"], l, c, e))
-                self.matches.append(self.vim.eval(
-                    "matchadd(g:EnErrorStyle, '\\%{}l\\%>{}c\\%<{}c')".format(l, c, e)))
+                match = self.vim.eval(
+                    "matchadd(g:EnErrorStyle, '\\%{}l\\%>{}c\\%<{}c')".format(l, c, e))
+                self.log("adding match {} at line {} column {} error {}".format(match, l, c, e))
+                self.matches.append(match)
     def handle_string_response(self, payload):
         url = "http://127.0.0.1:{}/{}".format(self.ensime.http_port(),
                 payload["text"])
@@ -257,12 +259,14 @@ class EnsimeClient(object):
         self.send(json.dumps({"callId" : self.callId,"req" : request}))
         self.callId += 1
     def clean_errors(self):
-        for i in self.matches:
-            self.vim.eval("matchdelete({})".format(i))
+#        for i in self.matches:
+#            self.vim.eval("matchdelete({})".format(i))
+        self.vim.eval("clearmatches()")
         self.matches = []
         self.errors = []
     # @neovim.autocmd('BufLeave', pattern='*.scala', eval='expand("<afile>")', sync=True)
     def buffer_leave(self, filename):
+        self.log("buffer_leave: {}".format(filename))
         self.clean_errors()
     # @neovim.autocmd('BufEnter', pattern='*.scala', eval='expand("<afile>")', sync=True)
     def buffer_enter(self, filename):
