@@ -173,6 +173,11 @@ class EnsimeClient(object):
     def symbol(self, args, range = None):
         self.log("symbol: in")
         self.symbol_at_point_req(False)
+    # @neovim.command('EnSuggestImport', range='', nargs='*', sync=True)
+    def suggest_import(self, args, range = None):
+        self.log("inspect_type: in")
+        pos = self.get_position(self.cursor()[0], self.cursor()[1])
+        self.send_request({"point": pos, "maxResults":10, "names": ["CacheBuilder"], "typehint": "ImportSuggestionsReq", "file": self.path()})
     # @neovim.command('EnInspectType', range='', nargs='*', sync=True)
     def inspect_type(self, args, range = None):
         self.log("inspect_type: in")
@@ -399,9 +404,7 @@ class Ensime:
 
     def with_current_client(self, proc):
         c = self.current_client()
-        if c == None:
-            self.__message("Ensime config not found for this project")
-        else:
+        if c != None:
             return proc(c)
 
     def is_scala_file(self):
@@ -438,6 +441,11 @@ class Ensime:
     @neovim.command('EnDocBrowse', range='', nargs='*', sync=True)
     def com_en_doc_browse(self, args, range = None):
         self.with_current_client(lambda c: c.doc_browse(args, range))
+
+    @neovim.command('EnSuggestImport', range='', nargs='*', sync=True)
+    def com_en_suggest_import(self, args, range = None):
+        self.with_current_client(lambda c: c.suggest_import(args, range))
+
 
     @neovim.command('EnClients', range='', nargs='0', sync=True)
     def com_en_clients(self, args, range = None):

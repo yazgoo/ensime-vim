@@ -102,6 +102,10 @@ function! ensime#com_en_doc_browse(args, range) abort
     return s:call_plugin('com_en_doc_browse', [a:args, a:range])
 endfunction
 
+function! ensime#com_en_suggest_import(args, range) abort
+    return s:call_plugin('com_en_suggest_import', [a:args, a:range])
+endfunction
+
 function! ensime#com_en_clients(args, range) abort
     return s:call_plugin('com_en_clients', [a:args, a:range])
 endfunction
