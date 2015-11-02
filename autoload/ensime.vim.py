@@ -403,9 +403,7 @@ class Ensime:
 
     def with_current_client(self, proc):
         c = self.current_client()
-        if c == None:
-            self.__message("Ensime config not found for this project")
-        else:
+        if c != None:
             return proc(c)
 
     def is_scala_file(self):
