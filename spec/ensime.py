@@ -58,21 +58,6 @@ class TestEnsime(unittest.TestCase):
         os.rmdir(path)
     def do_test_setup_ws(self):
         launcher = ensime_launcher.EnsimeLauncher(TestVim())
-<<<<<<< HEAD
-        from ensime import EnsimeClient
-        client = EnsimeClient(TestVim(), launcher, "spec/conf")
-        try:
-            client.setup()
-        except:
-            None
-        try:
-            def false_method(what):
-                return False
-            client.module_exists = false_method
-            client.setup()
-        except:
-            None
-=======
         from ensime import EnsimeClient, Ensime
         client = EnsimeClient(TestVim(), launcher, "spec/conf")
         client.setup()
@@ -82,7 +67,6 @@ class TestEnsime(unittest.TestCase):
         client.setup()
         ensime = Ensime(TestVim())
         assert(ensime.client_status("spec/conf") == "ready")
->>>>>>> 1edb136e25e3fbe3ed0dace64780774a85f22da7
     def test_ensime_process(self):
         a = self
         class FakeProcess:
@@ -100,11 +84,8 @@ class TestEnsime(unittest.TestCase):
         import socket
         old_socket = socket.socket
         class FakeSocket:
-<<<<<<< HEAD
-=======
             def __init__(self, a = None, b = None):
                 None
->>>>>>> 1edb136e25e3fbe3ed0dace64780774a85f22da7
             def connect(self, a):
                 None
             def send(self, a):
@@ -117,17 +98,11 @@ class TestEnsime(unittest.TestCase):
                 None
             def close(self):
                 None
-<<<<<<< HEAD
-        def new_socket(a, b = None):
-            return FakeSocket()
-        socket.socket = new_socket
-=======
         socket.socket = FakeSocket
         import websocket
         def noop(a = None):
             None
         websocket.create_connection = noop
->>>>>>> 1edb136e25e3fbe3ed0dace64780774a85f22da7
         ensime_launcher.Util.write_file("/tmp/http", "42")
         assert(process.is_ready())
         self.do_test_setup_ws()
@@ -192,11 +167,7 @@ class TestEnsime(unittest.TestCase):
                 for typehint in ["NewScalaNotesEvent", "SymbolInfo", "IndexerReadyEvent", "AnalyzerReadyEvent", "BasicTypeInfo", "StringResponse", "CompletionInfoList"]]
         client.open_definition = True
         client.handle_payload({"typehint": "SymbolInfo", "notes":notes, "declPos": { "file": "none" }, "fullName": "none", "text": "none", "completions":[] })
-<<<<<<< HEAD
-        assert(client.get_cache_port("http") == "42")
-=======
         assert(client.ensime.http_port() == 42)
->>>>>>> 1edb136e25e3fbe3ed0dace64780774a85f22da7
         class FakeSocket:
             def __init__(self):
                 self.first = True
@@ -212,17 +183,6 @@ class TestEnsime(unittest.TestCase):
         client.vim.current.window.cursor[1] = 2
         assert(client.complete_func('1', "") == 1)
         client.vim.current.window.cursor[1] = 0
-<<<<<<< HEAD
-        client.suggests = []
-        assert(client.complete_func(0, "") == [])
-        client.handle_string_response({"text": "lol"})
-        client.browse = True
-        old_get = os.environ.get
-        def new_get(blah):
-            return "echo"
-        os.environ.get = new_get
-        client.handle_string_response({"text": "lol"})
-=======
         client.suggests = ["a"]
         assert(client.complete_func(0, "") == ['a'])
         client.suggests = None
@@ -235,7 +195,6 @@ class TestEnsime(unittest.TestCase):
             return "echo"
         os.environ.get = new_get
         client.handle_string_response({"text": "lol"})
->>>>>>> 1edb136e25e3fbe3ed0dace64780774a85f22da7
         os.environ.get = old_get
         assert(client.type_check("/tmp") == None)
         assert(client.on_cursor_hold("/tmp") == None)
