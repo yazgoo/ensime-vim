@@ -231,6 +231,7 @@ class EnsimeClient(object):
             try:
                 self.message(payload["declPos"]["file"])
                 if self.open_definition:
+                    self.clean_errors()
                     self.vim.command(":vsplit {}".format(
                         payload["declPos"]["file"]))
                     self.vim.command("filetype detect")
