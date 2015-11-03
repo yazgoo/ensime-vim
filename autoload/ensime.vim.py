@@ -47,7 +47,7 @@ class EnsimeClient(object):
         log_dir = "/tmp/"
         if os.path.isdir(self.ensime_cache):
             log_dir = self.ensime_cache
-        f = open(log_dir + "ensime-vim.log", "a")
+        f = open(log_dir + "/ensime-vim.log", "a")
         f.write("{}: {}\n".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f"), what))
         f.close()
     def unqueue_poll(self, running = lambda: True, sleep_t = 1):
@@ -64,7 +64,7 @@ class EnsimeClient(object):
         self.ensime_cache = os.path.join(os.path.dirname(self.config_path), ".ensime_cache")
         self.launcher = launcher
         self.log("__init__: in")
-        self.callId = 0
+        self.call_id = 0
         self.browse = False
         self.vim = vim
         self.receive_callbacks = {}
@@ -76,6 +76,7 @@ class EnsimeClient(object):
         self.ensime = None
         self.no_teardown = False
         self.open_definition = False
+        self.en_format_source_id = None
         self.ws = None
         self.queue = Queue.Queue()
         self.complete_timeout = 20
@@ -134,14 +135,16 @@ class EnsimeClient(object):
         result += sum([len(f.readline()) for i in range(row - 1)])
         f.close()
         return result
+    def get_file_info(self):
+        content = self.vim.eval('join(getline(1, "$"), "\n")')
+        return {"file": self.path(), "contents": content}
     def complete(self):
         self.log("complete: in")
-        content = self.vim.eval('join(getline(1, "$"), "\n")')
         pos = self.get_position(self.cursor()[0], self.cursor()[1] + 1)
         self.send_request({"point": pos, "maxResults":100,
             "typehint":"CompletionsReq",
             "caseSens":True,
-            "fileInfo": {"file": self.path(), "contents": content},
+            "fileInfo": self.get_file_info(),
             "reload":False})
     def send_at_point(self, what, path, row, col, size, where = "range"):
         i = self.get_position(row, col)
@@ -156,6 +159,10 @@ class EnsimeClient(object):
     def type_check_cmd(self, args, range = None):
         self.log("type_check_cmd: in")
         self.type_check("")
+    # @neovim.command('EnFormatSource', range='', nargs='*', sync=True)
+    def format_source(self, args, range = None):
+        self.log("type_check_cmd: in")
+        self.en_format_source_id = self.send_request({"typehint": "FormatOneSourceReq", "file": self.get_file_info()})
     # @neovim.command('EnType', range='', nargs='*', sync=True)
     def type(self, args, range = None):
         self.log("type: in")
@@ -218,12 +225,15 @@ class EnsimeClient(object):
                 self.log("adding match {} at line {} column {} error {}".format(match, l, c, e))
                 self.matches.append(match)
     def handle_string_response(self, payload):
-        url = "http://127.0.0.1:{}/{}".format(self.ensime.http_port(),
-                payload["text"])
-        if self.browse:
-            subprocess.Popen([os.environ.get("BROWSER"), url])
-            self.browse = False
-        self.message(url)
+        if self.en_format_source_id == None:
+            url = "http://127.0.0.1:{}/{}".format(self.ensime.http_port(),
+                    payload["text"])
+            if self.browse:
+                subprocess.Popen([os.environ.get("BROWSER"), url])
+                self.browse = False
+            self.message(url)
+        else:
+            self.vim.current.buffer[:] =  [line.encode('utf-8') for line in payload["text"].split("\n")]
     def handle_completion_info_list(self, completions):
         self.suggests = [completion["name"] for completion in completions]
     def handle_payload(self, payload):
@@ -256,8 +266,10 @@ class EnsimeClient(object):
 
     def send_request(self, request):
         self.log("send_request: in")
-        self.send(json.dumps({"callId" : self.callId,"req" : request}))
-        self.callId += 1
+        self.send(json.dumps({"callId" : self.call_id,"req" : request}))
+        call_id = self.call_id
+        self.call_id += 1
+        return call_id
     def clean_errors(self):
 #        for i in self.matches:
 #            self.vim.eval("matchdelete({})".format(i))
@@ -280,7 +292,6 @@ class EnsimeClient(object):
         self.clean_errors()
     # @neovim.autocmd('CursorHold', pattern='*.scala', eval='expand("<afile>")', sync=True)
     def on_cursor_hold(self, filename):
-        self.log("on_cursor_hold: in")
         self.unqueue(filename)
         # http://vim.wikia.com/wiki/Timer_to_execute_commands_periodically
         self.vim.command('set updatetime=1000')
@@ -301,7 +312,6 @@ class EnsimeClient(object):
         if error != None:
             self.message(error.message)
     def unqueue(self, filename):
-        self.log("unqueue: in")
         while True:
             if self.queue.empty():
                 break
@@ -316,8 +326,6 @@ class EnsimeClient(object):
                     self.log("launching callback: {}".format(name))
                     self.receive_callbacks[name](self, _json["payload"])
                 self.handle_payload(_json["payload"])
-        self.log("unqueue: before close")
-        self.log("unqueue: after close")
     # @neovim.function('EnCompleteFunc', sync=True)
     def complete_func(self, findstart, base):
         self.log("complete_func: in {} {}".format(findstart, base))
@@ -423,6 +431,9 @@ class Ensime:
     def com_en_type(self, args, range = None):
         self.with_current_client(lambda c: c.type(None))
 
+    def com_en_format_source(self, args, range = None):
+        self.with_current_client(lambda c: c.format_source(None))
+
     def com_en_declaration(self, args, range = None):
         self.with_current_client(lambda c: c.open_declaration(args, range))
 
@@ -440,7 +451,6 @@ class Ensime:
 
     def com_en_suggest_import(self, args, range = None):
         self.with_current_client(lambda c: c.suggest_import(args, range))
-
 
     def com_en_clients(self, args, range = None):
         for path in self.client_keys():
