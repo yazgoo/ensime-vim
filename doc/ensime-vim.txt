@@ -22,7 +22,7 @@ They should be ran from
 :EnDocBrowse     launch $BROWSER (env variable) documentation url
 :EnTypeCheck     launch a check on current file (launched on save)
 :EnCompleteFunc  get an omnicompletion menu (via ctrl+X ctrl+O) - blocking
-:EnFormatSource  format file based on scalariform
+:EnFormatSource  format file based (see https://github.com/ensime/ensime-emacs/wiki/Scalariform-Preferences)
 
 CUSTOMIZING
 
