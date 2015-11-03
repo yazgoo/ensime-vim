@@ -120,7 +120,7 @@ class TestEnsime(unittest.TestCase):
         ensime_launcher.Util.write_file(conf_path, "blah 42 :scala-version test :java-home /usr :cache-dir /tmp :java-flags none")
         conf = launcher.parse_conf(conf_path)
         assert(conf['blah'] == '42')
-        test_dir = "/tmp/classpath_project_ensime/test"
+        test_dir = os.environ['HOME'] + "/.config/classpath_project_ensime/test"
         ensime_launcher.Util.mkdir_p(test_dir);
         assert(launcher.classpath_project_dir("test") == test_dir)
         assert(launcher.build_sbt("test", "file") != None)
