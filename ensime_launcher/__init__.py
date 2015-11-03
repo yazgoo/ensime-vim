@@ -60,7 +60,7 @@ class EnsimeProcess:
         return int(Util.read_file(os.path.join(self.cache_dir, "http")))
 
 class EnsimeLauncher:
-    def __init__(self, vim, base_dir =  "/tmp/classpath_project_ensime"):
+    def __init__(self, vim, base_dir =  os.environ['HOME'] + "/.config/classpath_project_ensime"):
         self.vim = vim
         self.base_dir = os.path.abspath(base_dir)
         self.ensime_version = "0.9.10-SNAPSHOT"
