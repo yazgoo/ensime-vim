@@ -116,7 +116,6 @@ class EnsimeClient(object):
                 self.ws.send(what + "\n")
 
     def cursor(self):
-        self.log("cursor: in")
         return self.vim.current.window.cursor
     def path(self):
         self.log("path: in")
