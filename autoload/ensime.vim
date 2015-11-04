@@ -110,6 +110,26 @@ function! ensime#com_en_suggest_import(args, range) abort
     return s:call_plugin('com_en_suggest_import', [a:args, a:range])
 endfunction
 
+function! ensime#com_en_set_break(args, range) abort
+    return s:call_plugin('com_en_set_break', [a:args, a:range])
+endfunction
+
+function! ensime#com_en_clear_breaks(args, range) abort
+    return s:call_plugin('com_en_clear_breaks', [a:args, a:range])
+endfunction
+
+function! ensime#com_en_debug_start(args, range) abort
+    return s:call_plugin('com_en_debug_start', [a:args, a:range])
+endfunction
+
+function! ensime#com_en_debug_continue(args, range) abort
+    return s:call_plugin('com_en_debug_continue', [a:args, a:range])
+endfunction
+
+function! ensime#com_en_backtrace(args, range) abort
+    return s:call_plugin('com_en_backtrace', [a:args, a:range])
+endfunction
+
 function! ensime#com_en_clients(args, range) abort
     return s:call_plugin('com_en_clients', [a:args, a:range])
 endfunction
