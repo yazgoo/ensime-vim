@@ -77,6 +77,7 @@ class EnsimeClient(object):
         self.no_teardown = False
         self.open_definition = False
         self.en_format_source_id = None
+        self.debug_thread_id = None
         self.ws = None
         self.queue = Queue.Queue()
         self.complete_timeout = 20
@@ -196,6 +197,10 @@ class EnsimeClient(object):
     def debug_start(self, args, range = None):
         self.log("debug_start: in")
         self.send_request({"typehint": "DebugStartReq", "commandLine": args[0]})
+    # @neovim.command('EnDebugContinue', range='', nargs='*', sync=True)
+    def debug_continue(self, args, range = None):
+        self.log("debug_start: in")
+        self.send_request({"typehint": "DebugContinueReq", "threadId": self.debug_thread_id})
     # @neovim.command('EnInspectType', range='', nargs='*', sync=True)
     def inspect_type(self, args, range = None):
         self.log("inspect_type: in")
@@ -276,6 +281,9 @@ class EnsimeClient(object):
             self.message(payload["type"]["fullName"])
         elif typehint == "DebugOutputEvent":
             self.message(payload["body"].encode("ascii","ignore"))
+        elif typehint == "DebugBreakEvent":
+            self.message("breaked at {} {}".format(payload["file"], payload["line"]))
+            self.debug_thread_id = payload["threadId"]
 
     def send_request(self, request):
         self.log("send_request: in")
@@ -473,6 +481,9 @@ class Ensime:
 
     def com_en_debug_start(self, args, range = None):
         self.with_current_client(lambda c: c.debug_start(args, range))
+
+    def com_en_debug_continue(self, args, range = None):
+        self.with_current_client(lambda c: c.debug_continue(args, range))
 
     def com_en_clients(self, args, range = None):
         for path in self.client_keys():

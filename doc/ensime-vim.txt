@@ -26,6 +26,7 @@ They should be ran from
 :EnSetBreak             add a breakpoint on current line
 :EnClearBreaks          remove all breakpoints
 :EnDebugStart class     start debugging the specified class
+:EnDebugContinue        continue debugging after pause
 
 CUSTOMIZING
 
