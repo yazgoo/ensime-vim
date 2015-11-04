@@ -116,7 +116,6 @@ class EnsimeClient(object):
                 self.ws.send(what + "\n")
 
     def cursor(self):
-        self.log("cursor: in")
         return self.vim.current.window.cursor
     def path(self):
         self.log("path: in")
@@ -185,6 +184,18 @@ class EnsimeClient(object):
         self.log("inspect_type: in")
         pos = self.get_position(self.cursor()[0], self.cursor()[1])
         self.send_request({"point": pos, "maxResults":10, "names": ["CacheBuilder"], "typehint": "ImportSuggestionsReq", "file": self.path()})
+    # @neovim.command('EnSetBreak', range='', nargs='*', sync=True)
+    def set_break(self, args, range = None):
+        self.log("set_break: in")
+        self.send_request({"line": self.cursor()[0], "maxResults":10, "typehint": "DebugSetBreakReq", "file": self.path()})
+    # @neovim.command('EnClearBreaks', range='', nargs='*', sync=True)
+    def clear_breaks(self, args, range = None):
+        self.log("clear_breaks: in")
+        self.send_request({"typehint": "DebugClearAllBreakReq"})
+    # @neovim.command('EnDebugStart', range='', nargs='*', sync=True)
+    def debug_start(self, args, range = None):
+        self.log("debug_start: in")
+        self.send_request({"typehint": "DebugStartReq", "commandLine": args[0]})
     # @neovim.command('EnInspectType', range='', nargs='*', sync=True)
     def inspect_type(self, args, range = None):
         self.log("inspect_type: in")
@@ -263,6 +274,8 @@ class EnsimeClient(object):
             self.handle_completion_info_list(payload["completions"])
         elif typehint == "TypeInspectInfo":
             self.message(payload["type"]["fullName"])
+        elif typehint == "DebugOutputEvent":
+            self.message(payload["body"].encode("ascii","ignore"))
 
     def send_request(self, request):
         self.log("send_request: in")
@@ -451,6 +464,15 @@ class Ensime:
 
     def com_en_suggest_import(self, args, range = None):
         self.with_current_client(lambda c: c.suggest_import(args, range))
+
+    def com_en_set_break(self, args, range = None):
+        self.with_current_client(lambda c: c.set_break(args, range))
+
+    def com_en_clear_breaks(self, args, range = None):
+        self.with_current_client(lambda c: c.clear_breaks(args, range))
+
+    def com_en_debug_start(self, args, range = None):
+        self.with_current_client(lambda c: c.debug_start(args, range))
 
     def com_en_clients(self, args, range = None):
         for path in self.client_keys():
