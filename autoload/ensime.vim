@@ -126,6 +126,10 @@ function! ensime#com_en_debug_continue(args, range) abort
     return s:call_plugin('com_en_debug_continue', [a:args, a:range])
 endfunction
 
+function! ensime#com_en_backtrace(args, range) abort
+    return s:call_plugin('com_en_backtrace', [a:args, a:range])
+endfunction
+
 function! ensime#com_en_clients(args, range) abort
     return s:call_plugin('com_en_clients', [a:args, a:range])
 endfunction

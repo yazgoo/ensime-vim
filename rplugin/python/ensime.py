@@ -193,14 +193,18 @@ class EnsimeClient(object):
     def clear_breaks(self, args, range = None):
         self.log("clear_breaks: in")
         self.send_request({"typehint": "DebugClearAllBreakReq"})
-    # @neovim.command('EnDebugStart', range='', nargs='*', sync=True)
+    # @neovim.command('EnDebug', range='', nargs='*', sync=True)
     def debug_start(self, args, range = None):
         self.log("debug_start: in")
         self.send_request({"typehint": "DebugStartReq", "commandLine": args[0]})
-    # @neovim.command('EnDebugContinue', range='', nargs='*', sync=True)
+    # @neovim.command('EnContinue', range='', nargs='*', sync=True)
     def debug_continue(self, args, range = None):
         self.log("debug_start: in")
         self.send_request({"typehint": "DebugContinueReq", "threadId": self.debug_thread_id})
+    # @neovim.command('EnContinue', range='', nargs='*', sync=True)
+    def backtrace(self, args, range = None):
+        self.log("backtrace: in")
+        self.send_request({"typehint": "DebugBacktraceReq", "threadId": self.debug_thread_id, "index":0, "count":100})
     # @neovim.command('EnInspectType', range='', nargs='*', sync=True)
     def inspect_type(self, args, range = None):
         self.log("inspect_type: in")
@@ -284,7 +288,11 @@ class EnsimeClient(object):
         elif typehint == "DebugBreakEvent":
             self.message("breaked at {} {}".format(payload["file"], payload["line"]))
             self.debug_thread_id = payload["threadId"]
-
+        elif typehint == "DebugBacktrace":
+            self.show_backtrace(payload["frames"])
+    def show_backtrace(self, frames):
+        self.vim.command(":split backtrace.json")
+        self.vim.current.buffer[:] = json.dumps(frames, indent=2).split("\n")
     def send_request(self, request):
         self.log("send_request: in")
         self.send(json.dumps({"callId" : self.call_id,"req" : request}))
@@ -492,13 +500,17 @@ class Ensime:
     def com_en_clear_breaks(self, args, range = None):
         self.with_current_client(lambda c: c.clear_breaks(args, range))
 
-    @neovim.command('EnDebugStart', range='', nargs='*', sync=True)
+    @neovim.command('EnDebug', range='', nargs='*', sync=True)
     def com_en_debug_start(self, args, range = None):
         self.with_current_client(lambda c: c.debug_start(args, range))
 
-    @neovim.command('EnDebugContinue', range='', nargs='*', sync=True)
+    @neovim.command('EnContinue', range='', nargs='*', sync=True)
     def com_en_debug_continue(self, args, range = None):
         self.with_current_client(lambda c: c.debug_continue(args, range))
+
+    @neovim.command('EnBacktrace', range='', nargs='*', sync=True)
+    def com_en_backtrace(self, args, range = None):
+        self.with_current_client(lambda c: c.backtrace(args, range))
 
     @neovim.command('EnClients', range='', nargs='0', sync=True)
     def com_en_clients(self, args, range = None):

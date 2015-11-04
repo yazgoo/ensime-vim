@@ -23,8 +23,9 @@ command! -nargs=* -range EnDocBrowse call ensime#com_en_doc_browse([<f-args>], '
 command! -nargs=* -range EnSuggestImport call ensime#com_en_suggest_import([<f-args>], '')
 command! -nargs=* -range EnSetBreak call ensime#com_en_set_break([<f-args>], '')
 command! -nargs=* -range EnClearBreaks call ensime#com_en_clear_breaks([<f-args>], '')
-command! -nargs=* -range EnDebugStart call ensime#com_en_debug_start([<f-args>], '')
-command! -nargs=* -range EnDebugContinue call ensime#com_en_debug_continue([<f-args>], '')
+command! -nargs=* -range EnDebug call ensime#com_en_debug_start([<f-args>], '')
+command! -nargs=* -range EnContinue call ensime#com_en_debug_continue([<f-args>], '')
+command! -nargs=* -range EnBacktrace call ensime#com_en_backtrace([<f-args>], '')
 command! -nargs=0 -range EnClients call ensime#com_en_clients([<f-args>], '')
 
 function! EnCompleteFunc(a, b) abort

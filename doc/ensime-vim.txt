@@ -25,8 +25,9 @@ They should be ran from
 :EnFormatSource         format file based (see https://github.com/ensime/ensime-emacs/wiki/Scalariform-Preferences)
 :EnSetBreak             add a breakpoint on current line
 :EnClearBreaks          remove all breakpoints
-:EnDebugStart class     start debugging the specified class
-:EnDebugContinue        continue debugging after pause
+:EnDebug class          start debugging the specified class
+:EnContinue             continue debugging after pause
+:EnBacktrace            show backtrace when execution is paused in a new buffer
 
 CUSTOMIZING
 
