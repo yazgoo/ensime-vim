@@ -295,7 +295,7 @@ class EnsimeClient(object):
         _type = payload["fullName"]
         if payload["typeArgs"] != []:
             _type += "["
-            _type = ",".join(x["name"] for x in payload["typeArgs"]]
+            _type = ",".join([x["name"] for x in payload["typeArgs"]])
             _type += "]"
         self.message(_type)
     def show_backtrace(self, frames):
