@@ -254,6 +254,7 @@ class EnsimeClient(object):
             self.message(url)
         else:
             self.vim.current.buffer[:] =  [line.encode('utf-8') for line in payload["text"].split("\n")]
+            self.en_format_source_id = None
     def handle_completion_info_list(self, completions):
         self.suggests = [completion["name"] for completion in completions]
     def handle_payload(self, payload):
@@ -276,7 +277,7 @@ class EnsimeClient(object):
         elif typehint == "NewScalaNotesEvent":
             self.handle_new_scala_notes_event(payload["notes"])
         elif typehint == "BasicTypeInfo":
-            self.message(payload["fullName"])
+            self.show_type(payload)
         elif typehint == "StringResponse":
             self.handle_string_response(payload)
         elif typehint == "CompletionInfoList":
@@ -290,6 +291,13 @@ class EnsimeClient(object):
             self.debug_thread_id = payload["threadId"]
         elif typehint == "DebugBacktrace":
             self.show_backtrace(payload["frames"])
+    def show_type(self, payload):
+        _type = payload["fullName"]
+        if payload["typeArgs"] != []:
+            _type += "["
+            _type = ",".join([x["name"] for x in payload["typeArgs"]])
+            _type += "]"
+        self.message(_type)
     def show_backtrace(self, frames):
         self.vim.command(":split backtrace.json")
         self.vim.current.buffer[:] = json.dumps(frames, indent=2).split("\n")
