@@ -14,20 +14,20 @@ function! ensime#teardown() abort
     return s:call_plugin('teardown', [])
 endfunction
 
-function! ensime#current_client() abort
-    return s:call_plugin('current_client', [])
+function! ensime#current_client(create, quiet, allow_classpath_file_creation) abort
+    return s:call_plugin('current_client', [a:create, a:quiet, a:allow_classpath_file_creation])
 endfunction
 
-function! ensime#client_for(config_path, create) abort
-    return s:call_plugin('client_for', [a:config_path, a:create])
+function! ensime#client_for(config_path, create, quiet, allow_classpath_file_creation) abort
+    return s:call_plugin('client_for', [a:config_path, a:create, a:quiet, a:allow_classpath_file_creation])
 endfunction
 
 function! ensime#find_config_path(path) abort
     return s:call_plugin('find_config_path', [a:path])
 endfunction
 
-function! ensime#with_current_client(proc) abort
-    return s:call_plugin('with_current_client', [a:proc])
+function! ensime#with_current_client(proc, create, quiet, allow_classpath_file_creation) abort
+    return s:call_plugin('with_current_client', [a:proc, a:create, a:quiet, a:allow_classpath_file_creation])
 endfunction
 
 function! ensime#is_scala_file() abort
@@ -120,6 +120,10 @@ endfunction
 
 function! ensime#com_en_debug_start(args, range) abort
     return s:call_plugin('com_en_debug_start', [a:args, a:range])
+endfunction
+
+function! ensime#com_en_classpath(args, range) abort
+    return s:call_plugin('com_en_classpath', [a:args, a:range])
 endfunction
 
 function! ensime#com_en_debug_continue(args, range) abort

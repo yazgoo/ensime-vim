@@ -15,6 +15,7 @@ COMMANDS                                        *ensime-commands*
 These commands are local to the buffers in which they work.
 They should be ran from
 
+:EnClasspath            generates classpath for ensime and launch ensime-server
 :EnType                 displays type under cursor
 :EnSymbol               displays the path where the symbol under cursor was declared
 :EnDeclaration          vsplit window where the symbol under cursor was declared

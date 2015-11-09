@@ -86,8 +86,14 @@ class EnsimeClient(object):
         self.log("teardown: in")
         if self.ensime != None and not self.no_teardown:
             self.ensime.stop()
-    def setup(self):
+    def setup(self, quiet = False, allow_classpath_file_creation = False):
         if self.ensime == None:
+            self.log("setup({}, {}) called by {}()".format(quiet, allow_classpath_file_creation, inspect.stack()[1][3]))
+            if not allow_classpath_file_creation and not allow_classpath_file_creation and self.launcher.no_classpath_file(self.config_path):
+                if not quiet:
+                    self.message("please :EnClasspath to initialize ensime classpath")
+                return False
+            self.message("setup: launching ensime")
             self.ensime = self.launcher.launch(self.config_path)
             self.vim.command("set omnifunc=EnCompleteFunc")
         if self.ws == None and self.ensime.is_ready():
@@ -97,12 +103,14 @@ class EnsimeClient(object):
                     self.ensime.http_port()))
             else:
                 self.tell_module_missing("websocket-client")
+        return True
     def tell_module_missing(self, name):
         self.message("{} missing: do a `pip install {}` and restart vim".format(name, name))
     def send(self, what):
         self.log("send: in")
         if self.ws == None:
-            self.message("still initializing")
+            if not self.launcher.no_classpath_file(self.config_path):
+                self.message("still initializing")
         else:
             try:
                 self.log("send: {}".format(what))
@@ -157,6 +165,9 @@ class EnsimeClient(object):
     def type_check_cmd(self, args, range = None):
         self.log("type_check_cmd: in")
         self.type_check("")
+    # @neovim.command('EnClasspath', range='', nargs='*', sync=True)
+    def en_classpath(self, args, range = None):
+        self.log("en_classpath: in")
     # @neovim.command('EnFormatSource', range='', nargs='*', sync=True)
     def format_source(self, args, range = None):
         self.log("type_check_cmd: in")
@@ -331,7 +342,8 @@ class EnsimeClient(object):
         self.vim.command('call feedkeys("f\e")')
     # @neovim.autocmd('CursorMoved', pattern='*.scala', eval='expand("<afile>")', sync=True)
     def cursor_moved(self, filename):
-        self.setup()
+        self.log("cursor moved: in")
+        self.setup(True, False)
         if self.ws == None: return
         self.display_error_if_necessary(filename)
         self.unqueue(filename)
@@ -417,22 +429,24 @@ class Ensime:
         for c in self.clients.values():
             c.teardown(None)
 
-    def current_client(self):
+    def current_client(self, create = True, quiet = False, allow_classpath_file_creation = False):
         config_path = self.find_config_path(self.vim.eval("expand('%:p')"))
         if config_path == None:
             return None
         else:
-            return self.client_for(config_path)
+            return self.client_for(config_path, create, quiet, allow_classpath_file_creation)
 
-    def client_for(self, config_path, create = True):
+    def client_for(self, config_path, create = True, quiet = False, allow_classpath_file_creation = False):
         abs_path = os.path.abspath(config_path)
         if abs_path in self.clients:
             return self.clients[abs_path]
         elif create:
             client = EnsimeClient(self.vim, self.launcher, config_path)
-            self.clients[abs_path] = client
-            client.setup()
-            return client
+            if client.setup(quiet, allow_classpath_file_creation):
+                self.clients[abs_path] = client
+                return client
+            else:
+                return None
         else:
             return None
 
@@ -447,8 +461,8 @@ class Ensime:
         else:
             return self.find_config_path(os.path.dirname(abs_path))
 
-    def with_current_client(self, proc):
-        c = self.current_client()
+    def with_current_client(self, proc, create = True, quiet = False, allow_classpath_file_creation = False):
+        c = self.current_client(create, quiet, allow_classpath_file_creation)
         if c != None:
             return proc(c)
 
@@ -507,6 +521,10 @@ class Ensime:
     def com_en_debug_start(self, args, range = None):
         self.with_current_client(lambda c: c.debug_start(args, range))
 
+    @neovim.command('EnClasspath', range='', nargs='*', sync=True)
+    def com_en_classpath(self, args, range = None):
+        self.with_current_client(lambda c: c.en_classpath(args, range), True, False, True)
+
     @neovim.command('EnContinue', range='', nargs='*', sync=True)
     def com_en_debug_continue(self, args, range = None):
         self.with_current_client(lambda c: c.debug_continue(args, range))
@@ -526,7 +544,7 @@ class Ensime:
 
     @neovim.autocmd('BufEnter', pattern='*.scala', eval='expand("<afile>")', sync=True)
     def au_buf_enter(self, filename):
-        self.with_current_client(lambda c: c.buffer_enter(filename))
+        self.with_current_client(lambda c: c.buffer_enter(filename), True, True)
 
     @neovim.autocmd('BufLeave', pattern='*.scala', eval='expand("<afile>")', sync=True)
     def au_buf_leave(self, filename):
@@ -542,7 +560,7 @@ class Ensime:
 
     @neovim.autocmd('CursorMoved', pattern='*.scala', eval='expand("<afile>")', sync=True)
     def au_cursor_moved(self, filename):
-        self.with_current_client(lambda c: c.cursor_moved(filename))
+        self.with_current_client(lambda c: c.cursor_moved(filename), True, True)
 
     @neovim.function('EnCompleteFunc', sync=True)
     def fun_en_complete_func(self, findstart, base = None):
