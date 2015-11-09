@@ -83,10 +83,16 @@ class EnsimeLauncher:
     def classpath_project_dir(self, scala_version):
         return os.path.join(self.base_dir, scala_version)
 
+    def no_classpath_file(self, conf_path):
+        conf = self.parse_conf(conf_path)
+        project_dir = self.classpath_project_dir(conf['scala-version'])
+        classpath_file = os.path.join(project_dir, "classpath")
+        return not os.path.exists(classpath_file)
+
     def load_classpath(self, scala_version, java_home):
         project_dir = self.classpath_project_dir(scala_version)
         classpath_file = os.path.join(project_dir, "classpath")
-        if not os.path.exists(classpath_file):
+        if self.no_classpath_file():
             self.generate_classpath(scala_version, classpath_file)
         return "{}:{}/lib/tools.jar".format(Util.read_file(classpath_file), java_home)
 
