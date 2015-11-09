@@ -88,8 +88,6 @@ class EnsimeClient(object):
             self.ensime.stop()
     def setup(self):
         if self.ensime == None:
-            self.log("starting up ensime")
-            self.message("ensime startup")
             self.ensime = self.launcher.launch(self.config_path)
             self.vim.command("set omnifunc=EnCompleteFunc")
         if self.ws == None and self.ensime.is_ready():
@@ -433,7 +431,6 @@ class Ensime:
         elif create:
             client = EnsimeClient(self.vim, self.launcher, config_path)
             self.clients[abs_path] = client
-            self.__message("Starting up ensime server...")
             client.setup()
             return client
         else:
