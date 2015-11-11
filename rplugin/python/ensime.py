@@ -350,7 +350,6 @@ class EnsimeClient(object):
         self.vim.command('call feedkeys("f\e")')
     # @neovim.autocmd('CursorMoved', pattern='*.scala', eval='expand("<afile>")', sync=True)
     def cursor_moved(self, filename):
-        self.log("cursor moved: in")
         self.setup(True, False)
         if self.ws == None: return
         self.display_error_if_necessary(filename)
