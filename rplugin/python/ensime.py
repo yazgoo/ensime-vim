@@ -93,7 +93,6 @@ class EnsimeClient(object):
                 if not quiet:
                     self.message("please :EnClasspath to initialize ensime classpath")
                 return False
-            self.message("setup: launching ensime")
             self.ensime = self.launcher.launch(self.config_path)
             self.vim.command("set omnifunc=EnCompleteFunc")
         if self.ws == None and self.ensime.is_ready():
@@ -101,6 +100,7 @@ class EnsimeClient(object):
                 from websocket import create_connection
                 self.ws = create_connection("ws://127.0.0.1:{}/jerky".format(
                     self.ensime.http_port()))
+                self.send_request({"typehint":"ConnectionInfoReq"})
             else:
                 self.tell_module_missing("websocket-client")
         return True
@@ -110,7 +110,7 @@ class EnsimeClient(object):
         self.log("send: in")
         if self.ws == None:
             if not self.launcher.no_classpath_file(self.config_path):
-                self.message("still initializing")
+                return
         else:
             try:
                 self.log("send: {}".format(what))
@@ -120,6 +120,7 @@ class EnsimeClient(object):
                 from websocket import create_connection
                 self.ws = create_connection("ws://127.0.0.1:{}/jerky".format(
                     self.ensime.http_port()))
+                self.send_request({"typehint":"ConnectionInfoReq"})
                 self.ws.send(what + "\n")
 
     def cursor(self):
@@ -254,11 +255,18 @@ class EnsimeClient(object):
                 self.log("adding match {} at line {} column {} error {}".format(match, l, c, e))
                 self.matches.append(match)
     def handle_string_response(self, payload):
+        self.log("handle_string_response: in")
         if self.en_format_source_id == None:
+            self.log("handle_string_response: received doc path")
             url = "http://127.0.0.1:{}/{}".format(self.ensime.http_port(),
                     payload["text"])
             if self.browse:
-                subprocess.Popen([os.environ.get("BROWSER"), url])
+                self.log("handle_string_response: browsing doc path {}".format(url))
+                browser = os.environ.get("BROWSER")
+                if browser != None:
+                    subprocess.Popen([browser, url])
+                else:
+                    self.log("handle_string_response: no browser variable defined")
                 self.browse = False
             self.message(url)
         else:
