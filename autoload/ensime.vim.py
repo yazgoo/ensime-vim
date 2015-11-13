@@ -247,7 +247,7 @@ class EnsimeClient(object):
         for note in notes:
             l = note["line"]
             c = note["col"] - 1
-            e = note["col"] + (note["end"] - note["beg"])
+            e = note["col"] + (note["end"] - note["beg"] + 1)
             if os.path.abspath(self.vim.eval("expand('%:p')")) == os.path.abspath(note["file"]):
                 self.errors.append(Error(note["file"], note["msg"], l, c, e))
                 match = self.vim.eval(
