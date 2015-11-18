@@ -34,6 +34,21 @@ class Error:
         self.e = e
     def includes(self, path, cursor):
         return self.path == os.path.abspath(path) and cursor[0] == self.l and self.c <= cursor[1] and cursor[1] < self.e
+    def get_truncated_message(self, cursor, width):
+        size = len(self.message)
+        if size < width:
+            return self.message
+        percent = float(cursor[1] - self.c) / (self.e - self.c)
+        center = int(percent * size)
+        start = center - width / 2
+        end =  center + width / 2
+        if start < 0:
+            start = 0
+            end = width
+        elif end > size:
+            end = size
+            start = size - width
+        return self.message[start:end]
 
 class EnsimeClient(object):
     def module_exists(self, module_name):
@@ -125,6 +140,8 @@ class EnsimeClient(object):
 
     def cursor(self):
         return self.vim.current.window.cursor
+    def width(self):
+        return self.vim.current.window.width
     def path(self):
         self.log("path: in")
         return self.vim.current.buffer.name
@@ -362,7 +379,7 @@ class EnsimeClient(object):
     def display_error_if_necessary(self, filename):
         error = self.get_error_at(self.cursor())
         if error != None:
-            self.message(error.message)
+            self.message(error.get_truncated_message(self.cursor(), self.width() - 1))
     def unqueue(self, filename):
         while True:
             if self.queue.empty():
