@@ -149,7 +149,9 @@ libraryDependencies ++= Seq(
   "org.scala-lang" % "scala-reflect" % scalaVersion.value force(),
   "org.scala-lang" % "scalap" % scalaVersion.value force()
 )
+
 val saveClasspathTask = TaskKey[Unit]("saveClasspath", "Save the classpath to a file")
+
 saveClasspathTask := {
   val managed = (managedClasspath in Runtime).value.map(_.data.getAbsolutePath)
   val unmanaged = (unmanagedClasspath in Runtime).value.map(_.data.getAbsolutePath)
