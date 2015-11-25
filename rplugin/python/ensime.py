@@ -398,7 +398,7 @@ class EnsimeClient(object):
     # @neovim.function('EnCompleteFunc', sync=True)
     def complete_func(self, findstart, base):
         self.log("complete_func: in {} {}".format(findstart, base))
-        if findstart == '1':
+        if str(findstart) == '1':
             self.complete()
             line = self.vim.eval("getline('.')")
             col = self.cursor()[1]
