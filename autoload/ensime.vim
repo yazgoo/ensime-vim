@@ -90,6 +90,10 @@ function! ensime#com_en_declaration(args, range) abort
     return s:call_plugin('com_en_declaration', [a:args, a:range])
 endfunction
 
+function! ensime#com_en_declaration_split(args, range) abort
+    return s:call_plugin('com_en_declaration_split', [a:args, a:range])
+endfunction
+
 function! ensime#com_en_symbol(args, range) abort
     return s:call_plugin('com_en_symbol', [a:args, a:range])
 endfunction
