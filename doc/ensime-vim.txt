@@ -18,7 +18,8 @@ They should be ran from
 :EnClasspath            generates classpath for ensime and launch ensime-server
 :EnType                 displays type under cursor
 :EnSymbol               displays the path where the symbol under cursor was declared
-:EnDeclaration          vsplit window where the symbol under cursor was declared
+:EnDeclaration          open buffer where the symbol under cursor was declared
+:EnDeclarationSplit     split window where the symbol under cursor was declared
 :EnDocUri               displays documentation url under cursor
 :EnDocBrowse            launch $BROWSER (env variable) documentation url
 :EnTypeCheck            launch a check on current file (launched on save)

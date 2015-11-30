@@ -81,6 +81,7 @@ class EnsimeClient(object):
         self.log("__init__: in")
         self.call_id = 0
         self.browse = False
+        self.split = False
         self.vim = vim
         self.receive_callbacks = {}
         self.matches = []
@@ -140,6 +141,9 @@ class EnsimeClient(object):
 
     def cursor(self):
         return self.vim.current.window.cursor
+    def set_cursor(self, row, col):
+        self.log("set_cursor: {}".format((row, col)))
+        self.vim.current.window.cursor = (row, col)
     def width(self):
         return self.vim.current.window.width
     def path(self):
@@ -153,6 +157,20 @@ class EnsimeClient(object):
         b = self.cursor()[1]
         s = e - b
         self.send_at_point(what, self.path(), self.cursor()[0], b + 1, s, where)
+    def set_position(self, declPos):
+        if declPos["typehint"] == "LineSourcePosition":
+            self.set_cursor(declPos['line'], 0)
+        else: # OffsetSourcePosition
+            f = open(self.path())
+            i = 0
+            row = 0
+            point = declPos["offset"]
+            for line in f:
+                i += len(line)
+                if point < i:
+                    self.set_cursor(row, point - i - len(line))
+                    break
+                row += 1
     def get_position(self, row, col):
         result = col -1
         f = open(self.path())
@@ -198,10 +216,16 @@ class EnsimeClient(object):
         self.open_definition = open_definition
         pos = self.get_position(self.cursor()[0], self.cursor()[1])
         self.send_request({
-            "point": pos, "typehint":"SymbolAtPointReq", "file":self.path()})
+            "point": pos+1, "typehint":"SymbolAtPointReq", "file":self.path()})
     # @neovim.command('EnDeclaration', range='', nargs='*', sync=True)
     def open_declaration(self, args, range = None):
         self.log("open_declaration: in")
+        self.split = False
+        self.symbol_at_point_req(True)
+    # @neovim.command('EnDeclaration', range='', nargs='*', sync=True)
+    def open_declaration_split(self, args, range = None):
+        self.log("open_declaration: in")
+        self.split = True
         self.symbol_at_point_req(True)
     # @neovim.command('EnSymbol', range='', nargs='*', sync=True)
     def symbol(self, args, range = None):
@@ -299,8 +323,8 @@ class EnsimeClient(object):
                 self.message(payload["declPos"]["file"])
                 if self.open_definition:
                     self.clean_errors()
-                    self.vim.command(":vsplit {}".format(
-                        payload["declPos"]["file"]))
+                    self.vim.command(":{} {}".format("split" if self.split else "e", payload["declPos"]["file"]))
+                    self.set_position(payload["declPos"])
                     self.vim.command("filetype detect")
             except KeyError:
                 self.message("symbol not found")
@@ -512,6 +536,10 @@ class Ensime:
     @neovim.command('EnDeclaration', range='', nargs='*', sync=True)
     def com_en_declaration(self, args, range = None):
         self.with_current_client(lambda c: c.open_declaration(args, range))
+
+    @neovim.command('EnDeclarationSplit', range='', nargs='*', sync=True)
+    def com_en_declaration_split(self, args, range = None):
+        self.with_current_client(lambda c: c.open_declaration_split(args, range))
 
     @neovim.command('EnSymbol', range='', nargs='*', sync=True)
     def com_en_symbol(self, args, range = None):
