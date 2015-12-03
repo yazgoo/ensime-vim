@@ -247,7 +247,10 @@ class EnsimeClient(object):
     # @neovim.command('EnDebug', range='', nargs='*', sync=True)
     def debug_start(self, args, range = None):
         self.log("debug_start: in")
-        self.send_request({"typehint": "DebugStartReq", "commandLine": args[0]})
+        if len(args) > 0:
+            self.send_request({"typehint": "DebugStartReq", "commandLine": args[0]})
+        else:
+            self.message("you must specify a class to debug")
     # @neovim.command('EnContinue', range='', nargs='*', sync=True)
     def debug_continue(self, args, range = None):
         self.log("debug_start: in")
