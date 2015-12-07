@@ -161,16 +161,8 @@ class EnsimeClient(object):
         if declPos["typehint"] == "LineSourcePosition":
             self.set_cursor(declPos['line'], 0)
         else: # OffsetSourcePosition
-            f = open(self.path())
-            i = 0
-            row = 0
             point = declPos["offset"]
-            for line in f:
-                i += len(line)
-                if point < i:
-                    self.set_cursor(row, point - i - len(line))
-                    break
-                row += 1
+            self.vim.command("goto %s"% (point+1))
     def get_position(self, row, col):
         result = col -1
         f = open(self.path())
@@ -323,11 +315,12 @@ class EnsimeClient(object):
         typehint = payload["typehint"]
         if typehint == "SymbolInfo":
             try:
-                self.message(payload["declPos"]["file"])
+                #self.message(payload["declPos"]["file"])
                 if self.open_definition:
                     self.clean_errors()
-                    self.vim.command(":{} {}".format("split" if self.split else "e", payload["declPos"]["file"]))
+                    self.vim.command("{} {}".format("split" if self.split else "e", payload["declPos"]["file"]))
                     self.set_position(payload["declPos"])
+                    self.vim.command("syntax enable")
                     self.vim.command("filetype detect")
             except KeyError:
                 self.message("symbol not found")

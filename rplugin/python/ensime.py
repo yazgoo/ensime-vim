@@ -321,6 +321,7 @@ class EnsimeClient(object):
                     self.vim.command("{} {}".format("split" if self.split else "e", payload["declPos"]["file"]))
                     self.set_position(payload["declPos"])
                     self.vim.command("syntax enable")
+                    self.vim.command("filetype detect")
             except KeyError:
                 self.message("symbol not found")
         elif typehint == "IndexerReadyEvent":
