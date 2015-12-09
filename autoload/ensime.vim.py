@@ -308,8 +308,23 @@ class EnsimeClient(object):
         else:
             self.vim.current.buffer[:] =  [line.encode('utf-8') for line in payload["text"].split("\n")]
             self.en_format_source_id = None
+    def sections_to_string(self, sections):
+        if(len(sections)) == 0: return ""
+        return ", ".join([": ".join(a) for a in sections[0]])
+    def completion_to_menu(self, completion):
+        if not completion["isCallable"]: return completion["typeSig"]["result"]
+        return "({}) => {}".format(self.sections_to_string(completion["typeSig"]["sections"]), completion["typeSig"]["result"])
+    def completion_to_suggest(self, completion):
+        res = {"word": completion["name"],
+                "menu": self.completion_to_menu(completion),
+                "kind": "f" if completion["isCallable"] else "v"}
+        self.log("completion_to_suggest: {}".format(res))
+        return res
     def handle_completion_info_list(self, completions):
-        self.suggests = [completion["name"] for completion in completions]
+        self.log("handle_completion_info_list: in")
+        self.suggests = [self.completion_to_suggest(completion) for completion in completions]
+        self.log("handle_completion_info_list: out")
+        self.log("handle_completion_info_list: {}".format(self.suggests))
     def handle_payload(self, payload):
         self.log("handle_payload: in {}".format(payload))
         typehint = payload["typehint"]
@@ -435,10 +450,10 @@ class EnsimeClient(object):
                 self.unqueue("")
             result = []
             if self.suggests != None:
+                self.log("complete_func: suggests in {}".format(self.suggests))
                 pattern = re.compile('^' + base)
                 for m in self.suggests:
-                    if pattern.match(m):
-                        result.append(m)
+                    result.append(m)
                 self.suggests = None
             return result
 
