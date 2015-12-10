@@ -141,6 +141,17 @@ class EnsimeClient(object):
 
     def cursor(self):
         return self.vim.current.window.cursor
+    def vim_pos_to_file_offset(self, pos):
+        row = int(pos[1])
+        col = int(pos[2])
+        if(col == 2147483647):
+            row += 1
+            col = 0
+        return self.get_position(row, col)
+    def get_pos(self, what):
+        return self.vim_pos_to_file_offset(self.vim.eval('getpos("{}")'.format(what)))
+    def last_range(self):
+        return {"start": self.get_pos("'<"), "end": self.get_pos("'>")}
     def set_cursor(self, row, col):
         self.log("set_cursor: {}".format((row, col)))
         self.vim.current.window.cursor = (row, col)
@@ -164,6 +175,7 @@ class EnsimeClient(object):
             point = declPos["offset"]
             self.vim.command("goto %s"% (point+1))
     def get_position(self, row, col):
+        self.log("get_position: ({}, {})".format(row, col))
         result = col -1
         f = open(self.path())
         result += sum([len(f.readline()) for i in range(row - 1)])
@@ -243,6 +255,18 @@ class EnsimeClient(object):
             self.send_request({"typehint": "DebugStartReq", "commandLine": args[0]})
         else:
             self.message("you must specify a class to debug")
+    # @neovim.command('EnRefactor', range='', nargs='*', sync=True)
+    def refactor(self, args, range = None):
+        if len(args) > 0:
+            range = self.last_range()
+            self.log("refactor: {}".format(range))
+            proc_id = 1
+            self.send_request({"tpe": "extractMethod", "procId": proc_id, "typehint": "PrepareRefactorReq", "interactive": False, "params":
+                {"methodName":args[0],"typehint":"ExtractMethodRefactorDesc",
+                    "end":range["end"],"file":self.path(),"start":range["start"]}})
+            self.send_request({"procId": proc_id, "typehint": "ExecRefactorReq", "tpe":{"typehint":"ExtractMethod"}})
+        else:
+            self.message("you must specify the name of the new method")
     # @neovim.command('EnContinue', range='', nargs='*', sync=True)
     def debug_continue(self, args, range = None):
         self.log("debug_start: in")
@@ -360,6 +384,9 @@ class EnsimeClient(object):
             self.debug_thread_id = payload["threadId"]
         elif typehint == "DebugBacktrace":
             self.show_backtrace(payload["frames"])
+        elif typehint == "RefactorEffect":
+            self.vim.command(":e")
+            self.vim.command("syntax enable")
     def show_type(self, payload):
         _type = payload["fullName"]
         if payload["typeArgs"] != []:
@@ -595,6 +622,10 @@ class Ensime:
     @neovim.command('EnBacktrace', range='', nargs='*', sync=True)
     def com_en_backtrace(self, args, range = None):
         self.with_current_client(lambda c: c.backtrace(args, range))
+
+    @neovim.command('EnRefactor', range='', nargs='*', sync=True)
+    def com_en_refactor(self, args, range = None):
+        self.with_current_client(lambda c: c.refactor(args, self.vim.current.range))
 
     @neovim.command('EnClients', range='', nargs='0', sync=True)
     def com_en_clients(self, args, range = None):

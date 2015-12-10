@@ -138,6 +138,10 @@ function! ensime#com_en_backtrace(args, range) abort
     return s:call_plugin('com_en_backtrace', [a:args, a:range])
 endfunction
 
+function! ensime#com_en_refactor(args, range) abort
+    return s:call_plugin('com_en_refactor', [a:args, a:range])
+endfunction
+
 function! ensime#com_en_clients(args, range) abort
     return s:call_plugin('com_en_clients', [a:args, a:range])
 endfunction

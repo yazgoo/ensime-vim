@@ -28,6 +28,7 @@ command! -nargs=* -range EnDebug call ensime#com_en_debug_start([<f-args>], '')
 command! -nargs=* -range EnClasspath call ensime#com_en_classpath([<f-args>], '')
 command! -nargs=* -range EnContinue call ensime#com_en_debug_continue([<f-args>], '')
 command! -nargs=* -range EnBacktrace call ensime#com_en_backtrace([<f-args>], '')
+command! -nargs=* -range EnRefactor call ensime#com_en_refactor([<f-args>], '')
 command! -nargs=0 -range EnClients call ensime#com_en_clients([<f-args>], '')
 
 function! EnCompleteFunc(a, b) abort
