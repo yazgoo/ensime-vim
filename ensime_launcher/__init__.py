@@ -124,7 +124,7 @@ class EnsimeLauncher:
         Util.mkdir_p(os.path.join(project_dir, "project"))
         Util.write_file(os.path.join(project_dir, "build.sbt"), self.build_sbt(scala_version, classpath_file))
         Util.write_file(os.path.join(project_dir, "project", "build.properties"),
-                self.sbt_version)
+                "sbt.version={}".format(self.sbt_version))
         log_file = os.path.join(project_dir, "build.log")
         log = open(log_file, 'w')
         null = open("/dev/null", "r")
