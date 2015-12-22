@@ -42,3 +42,10 @@ For example:
 
     :let EnErrorStyle='Underlined'
 
+UPGRADING ENSIME SERVER
+
+To upgrade ensime server, just do:
+
+    $ rm -rf ~/.config/classpath_project_ensime
+
+Restart vim en run EnClasspath
